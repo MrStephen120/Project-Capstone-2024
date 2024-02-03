@@ -22,17 +22,17 @@ class PROJECT_CAPSTONE_API AMainCharacterController : public APlayerController
 
 public:
 	// Enhanced Input Assets
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* MoveAction;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
+	TObjectPtr<UInputAction> MoveAction = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* JumpAction;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
+	TObjectPtr<UInputAction> JumpAction = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* LookAction;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
+	TObjectPtr<UInputAction> LookAction = nullptr; 
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputMappingContext* InputMappingContext;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
+	TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
 
 protected:
 
@@ -40,9 +40,11 @@ protected:
 	//void Move();
 	void HandleMoveAction(const FInputActionValue& Value);
 	//void Jump();
-	void HandleJumpAction(const FInputActionValue& Value);
+	void HandleJumpAction();
 	//void Look();
 	void HandleLookAction(const FInputActionValue& Value);
+
+	//Use FInputActionInstance for more details on input being handled.
 
 	virtual void OnPossess(APawn* aPawn) override;
 	virtual void OnUnPossess() override;
@@ -50,9 +52,9 @@ protected:
 private:
 
 	//Store reference to InputComponent to cast to EnhancedInputComponent
-	UPROPERTY()
-	UEnhancedInputComponent* EnhancedInput;
+	UPROPERTY() 
+	TObjectPtr<UEnhancedInputComponent> EnhancedInput = nullptr;
 	//Store reference to the pawn being controlled;
 	UPROPERTY()
-	AMainCharacter* PlayerCharacter;
+	TObjectPtr<AMainCharacter> PlayerCharacter = nullptr;
 };

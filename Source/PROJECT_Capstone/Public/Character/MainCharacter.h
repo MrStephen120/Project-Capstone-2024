@@ -4,9 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "EnhancedInputComponent.h"
-#include "InputAction.h"
-#include "InputMappingContext.h"
 #include "MainCharacter.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
@@ -25,6 +22,11 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+
+	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
+
+	virtual void Jump() override;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
