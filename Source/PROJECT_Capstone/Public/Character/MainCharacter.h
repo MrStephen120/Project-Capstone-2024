@@ -4,7 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "EnhancedInputComponent.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
 #include "MainCharacter.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
 
 UCLASS()
 class PROJECT_CAPSTONE_API AMainCharacter : public ACharacter
@@ -25,5 +30,4 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 };

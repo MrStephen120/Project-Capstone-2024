@@ -1,0 +1,58 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "InputAction.h"
+#include "InputActionValue.h"
+#include "GameFramework/PlayerController.h"
+#include "MainCharacterController.generated.h"
+
+// Forward Declarations
+class UEnhancedInputComponent;
+class AMainCharacter;
+class UInputMappingContext;
+
+DECLARE_LOG_CATEGORY_EXTERN(MainCharacterController, Log, All);
+UCLASS(Abstract)
+class PROJECT_CAPSTONE_API AMainCharacterController : public APlayerController
+{
+
+	GENERATED_BODY()
+
+public:
+	// Enhanced Input Assets
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* MoveAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* JumpAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputMappingContext* InputMappingContext;
+
+protected:
+
+	// Enhanced Input Action Handlers
+	//void Move();
+	void HandleMoveAction(const FInputActionValue& Value);
+	//void Jump();
+	void HandleJumpAction(const FInputActionValue& Value);
+	//void Look();
+	void HandleLookAction(const FInputActionValue& Value);
+
+	virtual void OnPossess(APawn* aPawn) override;
+	virtual void OnUnPossess() override;
+
+private:
+
+	//Store reference to InputComponent to cast to EnhancedInputComponent
+	UPROPERTY()
+	UEnhancedInputComponent* EnhancedInput;
+	//Store reference to the pawn being controlled;
+	UPROPERTY()
+	AMainCharacter* PlayerCharacter;
+};
