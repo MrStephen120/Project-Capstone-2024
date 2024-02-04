@@ -4,14 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "PlatformerGamemode.generated.h"
+#include "GM_Platformer.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECT_CAPSTONE_API APlatformerGamemode : public AGameModeBase
+class PROJECT_CAPSTONE_API AGM_Platformer : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+public:
+	AGM_Platformer();
 };
