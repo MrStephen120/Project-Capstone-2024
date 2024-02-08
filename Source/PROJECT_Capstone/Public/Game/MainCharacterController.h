@@ -41,6 +41,7 @@ protected:
 	void HandleMoveAction(const FInputActionValue& Value);
 	//void Jump();
 	void HandleJumpAction();
+	void HandleStopJumping();
 	//void Look();
 	void HandleLookAction(const FInputActionValue& Value);
 
