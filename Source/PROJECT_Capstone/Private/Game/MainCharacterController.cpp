@@ -5,6 +5,7 @@
 #include "Character/MainCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY(MainCharacterController);
 
@@ -126,8 +127,22 @@ void AMainCharacterController::HandleJumpAction()
 	// Make the Player's Character Pawn jump, disabling crouch if it was active
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->UnCrouch();
-		PlayerCharacter->Jump();
+		if (JumpCount < PlayerCharacter->JumpMaxCount) {
+
+			if (!PlayerCharacter->GetCharacterMovement()->IsFalling()) {
+				//Ground Jump
+				PlayerCharacter->Jump();
+				++JumpCount;
+				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);
+			}
+			//For Future Use: Check if it's a wall jump, if false then it's an air jump.
+
+			else { //AirJump
+				PlayerCharacter->AirJump();
+				++JumpCount;
+				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);
+			}
+		}
 	}
 }
 
