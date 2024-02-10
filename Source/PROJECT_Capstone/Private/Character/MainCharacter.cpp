@@ -32,6 +32,9 @@ AMainCharacter::AMainCharacter(const FObjectInitializer& object)
 void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	HandleWalkParticles();
+	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::HandleWalkParticles()
@@ -49,7 +52,7 @@ void AMainCharacter::HandleWalkParticles()
 			FRotator(0.0f),
 			EAttachLocation::SnapToTarget,
 			true);
-		UE_LOG(LogTemp, Warning, TEXT("Particle System not found, creating one."));
+		//UE_LOG(LogTemp, Warning, TEXT("Walk Particle System not found, creating one."));
 
 		WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 0.0f);
 		CanSpawnWalkParticles = false;
@@ -59,7 +62,7 @@ void AMainCharacter::HandleWalkParticles()
 	{
 		if (WalkingParticlesComponent && !CanSpawnWalkParticles)
 		{
-				UE_LOG(LogTemp, Warning, TEXT("Activating Particle System"));
+				//UE_LOG(LogTemp, Warning, TEXT("Activating Particle System"));
 				WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 10.0f);
 				CanSpawnWalkParticles = true;
 		}
@@ -68,10 +71,30 @@ void AMainCharacter::HandleWalkParticles()
 	{
 		if (WalkingParticlesComponent && CanSpawnWalkParticles)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("De-Activating Particle System"));
+			//UE_LOG(LogTemp, Warning, TEXT("De-Activating Particle System"));
 			WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 0.0f);
 			CanSpawnWalkParticles = false;
 		}
+	}
+}
+
+void AMainCharacter::HandleJumpSmokeRing()
+{
+	FVector ActorBounds = GetRootComponent()->Bounds.BoxExtent;
+	float HalfHeight = ActorBounds.Z;
+
+	SmokeRingParticleComponent = UNiagaraFunctionLibrary::SpawnSystemAttached
+	(JumpSmokeRing,
+		GetRootComponent(),
+		NAME_None,
+		FVector(0.0f, 0.0f, -HalfHeight),
+		FRotator(0.0f),
+		EAttachLocation::SnapToTarget,
+		true);
+	UE_LOG(LogTemp, Warning, TEXT("Spawning Smoke Ring."));
+
+	if (SmokeRingParticleComponent->IsComplete()) {
+		SmokeRingParticleComponent->DestroyComponent();
 	}
 }
 
@@ -121,16 +144,21 @@ void AMainCharacter::AirJump()
 	//JumpForce Velocity
 	FVector JumpForceVel = (GetVelocity() + FVector(0.0f, 0.0f, 900.0f));
 	LaunchCharacter(JumpForceVel, true, true);
+
+	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::Jump()
 {
 	Super::Jump();
+
+	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::StopJumping()
 {
 	Super::StopJumping();
+
 }
 
 void AMainCharacter::Landed(const FHitResult& Hit)
@@ -141,6 +169,7 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 	}
 
 	HandleWalkParticles();
+	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::Debug()

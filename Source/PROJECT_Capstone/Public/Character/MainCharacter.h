@@ -26,9 +26,12 @@ private:
 	FVector PreviousPosition;
 
 	//Particles
+	//Dust Trail
 	UNiagaraComponent* WalkingParticlesComponent;
 	bool CanSpawnWalkParticles;
-
+	//Jump Dust Ring
+	UNiagaraComponent* SmokeRingParticleComponent;
+	bool CanSmokeRingParticles;
 public:
 	// Sets default values for this character's properties
 	AMainCharacter(const FObjectInitializer& object);
@@ -39,10 +42,15 @@ protected:
 
 public:
 	//Particle
+	//Dust Trail
 	UPROPERTY(EditAnywhere, Category = "Effects")
 	UNiagaraSystem* WalkSmokeTrail;
+	//Jump Dust Ring
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* JumpSmokeRing;
 
 	void HandleWalkParticles();
+	void HandleJumpSmokeRing();
 
 	//Getters for Camera Components
 	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
