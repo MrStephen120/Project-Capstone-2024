@@ -5,6 +5,7 @@
 #include "Character/MainCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY(MainCharacterController);
 
@@ -15,16 +16,16 @@ void AMainCharacterController::OnPossess(APawn* aPawn)
 
 	//Store reference to Player's Pawn
 	PlayerCharacter = Cast<AMainCharacter>(aPawn);
-	checkf(PlayerCharacter,TEXT("AMainCharacterController derived classes should only posess AMainCharacter derived pawns"));
+	checkf(PlayerCharacter, TEXT("AMainCharacterController derived classes should only posess AMainCharacter derived pawns"));
 
 	// Get a reference to the EnhancedInputComponent
 	EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent);
-	checkf(EnhancedInput,TEXT("Unable to get reference to the EnhancedInput Component."));
+	checkf(EnhancedInput, TEXT("Unable to get reference to the EnhancedInput Component."));
 
 	// Get the local player subsystem
 	// Just a local variable, we dont need to refer to it again after this
 	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
-	checkf(InputSubsystem,TEXT("Unable to get reference to the EnhancedInputLocalPlayerSubsystem."));
+	checkf(InputSubsystem, TEXT("Unable to get reference to the EnhancedInputLocalPlayerSubsystem."));
 
 	// Wipe existing mappings, and add our mapping.
 	checkf(InputMappingContext, TEXT("InputMappingContext was not specified."));
@@ -74,14 +75,18 @@ void AMainCharacterController::OnPossess(APawn* aPawn)
 
 	//Bind Input Actions
 	//Attempts to bind if a valid value was provided.
+	//Move
 	if (MoveAction) {
 		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMainCharacterController::HandleMoveAction);
 	}
+	//Look
 	if (LookAction) {
 		EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMainCharacterController::HandleLookAction);
 	}
+	//Jump
 	if (JumpAction) {
 		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleJumpAction);
+		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &AMainCharacterController::HandleStopJumping);
 	}
 }
 
@@ -102,20 +107,50 @@ void AMainCharacterController::HandleMoveAction(const FInputActionValue& Value)
 	// Add movement to the Player's Character Pawn
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->AddMovementInput(PlayerCharacter->GetActorForwardVector(), MovementVector.Y);
-		PlayerCharacter->AddMovementInput(PlayerCharacter->GetActorRightVector(), MovementVector.X);
+		// find out which way is forward
+		const FRotator Rotation = GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+		//Get the axis direction
+		const FVector DirectionX = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector DirectionY = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+		//Move the player to the specified direction.
+		PlayerCharacter->AddMovementInput(DirectionY, MovementVector.X);
+		PlayerCharacter->AddMovementInput(DirectionX, MovementVector.Y);
 	}
 }
 
 void AMainCharacterController::HandleJumpAction()
 {
 	// Input is 'Digital' (value not used here)
-
 	// Make the Player's Character Pawn jump, disabling crouch if it was active
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->UnCrouch();
-		PlayerCharacter->Jump();
+		if (JumpCount < PlayerCharacter->JumpMaxCount) {
+
+			if (!PlayerCharacter->GetCharacterMovement()->IsFalling()) {
+				//Ground Jump
+				PlayerCharacter->Jump();
+				++JumpCount;
+				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);
+			}
+			//For Future Use: Check if it's a wall jump, if false then it's an air jump.
+
+			else { //AirJump
+				PlayerCharacter->AirJump();
+				++JumpCount;
+				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);
+			}
+		}
+	}
+}
+
+void AMainCharacterController::HandleStopJumping()
+{
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->StopJumping();
 	}
 }
 

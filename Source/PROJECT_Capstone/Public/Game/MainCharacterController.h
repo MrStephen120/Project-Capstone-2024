@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
+
 #include "GameFramework/PlayerController.h"
 #include "MainCharacterController.generated.h"
 
@@ -34,13 +35,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
 
-protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Jump")
+	int JumpCount;
 
+	UFUNCTION(BlueprintCallable)
+	void ResetJump() { JumpCount = 0; };
+
+protected:
 	// Enhanced Input Action Handlers
 	//void Move();
 	void HandleMoveAction(const FInputActionValue& Value);
+
 	//void Jump();
 	void HandleJumpAction();
+	void HandleStopJumping();
+
 	//void Look();
 	void HandleLookAction(const FInputActionValue& Value);
 

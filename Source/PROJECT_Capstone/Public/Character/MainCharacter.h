@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "MainCharacter.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
@@ -12,20 +15,63 @@ UCLASS()
 class PROJECT_CAPSTONE_API AMainCharacter : public ACharacter
 {
 	GENERATED_BODY()
+private:
+	//SetUp Camera
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class USpringArmComponent* CameraBoom;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* FollowCamera;
 
+	//For Debug Line
+	FVector PreviousPosition;
+
+	//Particles
+	//Dust Trail
+	UNiagaraComponent* WalkingParticlesComponent;
+	bool CanSpawnWalkParticles;
+	//Jump Dust Ring
+	UNiagaraComponent* SmokeRingParticleComponent;
+	bool CanSmokeRingParticles;
 public:
 	// Sets default values for this character's properties
-	AMainCharacter();
+	AMainCharacter(const FObjectInitializer& object);
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
+	//Particle
+	//Dust Trail
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* WalkSmokeTrail;
+	//Jump Dust Ring
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* JumpSmokeRing;
+
+	void HandleWalkParticles();
+	void HandleJumpSmokeRing();
+
+	//Getters for Camera Components
+	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	//Set up CharacterMovement Settings
+	void SetUpCharacterMovementSettings();
+
+	//Set up Camera Settings
+	void SetUpCamera();
 
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
 
+	void AirJump();
 	virtual void Jump() override;
+
+	virtual void StopJumping() override;
+
+	virtual void Landed(const FHitResult& Hit) override;
+	//For Debug
+	void Debug();
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
