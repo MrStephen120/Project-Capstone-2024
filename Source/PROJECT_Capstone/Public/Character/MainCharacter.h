@@ -9,8 +9,20 @@
 #include "NiagaraFunctionLibrary.h"
 #include "MainCharacter.generated.h"
 
+UENUM()
+enum class EMovementState
+{
+	Idle,
+	Walking,
+	Running,
+	Jumping,
+	DoubleJumping,
+	Diving,
+	LedgeGrabbing,
+	WallSliding,
+	WallJumping
+};
 DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
-
 UCLASS()
 class PROJECT_CAPSTONE_API AMainCharacter : public ACharacter
 {
