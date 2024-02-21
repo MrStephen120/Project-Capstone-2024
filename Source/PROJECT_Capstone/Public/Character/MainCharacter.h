@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-#include "NiagaraSystem.h"
+#include <CoreMinimal.h>
+#include <GameFramework/Character.h>
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "MainCharacter.generated.h"
 
 UENUM()
@@ -22,6 +22,7 @@ enum class EMovementState
 	WallSliding,
 	WallJumping
 };
+
 DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
 UCLASS()
 class PROJECT_CAPSTONE_API AMainCharacter : public ACharacter

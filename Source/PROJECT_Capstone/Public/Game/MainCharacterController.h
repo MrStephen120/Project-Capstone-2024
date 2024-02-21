@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "InputAction.h"
-#include "InputActionValue.h"
 
+#include "CoreMinimal.h"
+#include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
 #include "MainCharacterController.generated.h"
 
