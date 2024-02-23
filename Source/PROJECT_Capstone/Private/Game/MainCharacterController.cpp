@@ -31,48 +31,7 @@ void AMainCharacterController::OnPossess(APawn* aPawn)
 	checkf(InputMappingContext, TEXT("InputMappingContext was not specified."));
 	InputSubsystem->ClearAllMappings();
 	InputSubsystem->AddMappingContext(InputMappingContext, 0);
-	////Find Input Actions in Content Browser
-	////Move Action
-	//static ConstructorHelpers::FObjectFinder<UInputAction> MoveActionObject(TEXT("/Script/EnhancedInput.InputAction'/Game/ThirdPerson/Input/Actions/IA_Move.IA_Move'"));
-	//if (MoveActionObject.Succeeded())
-	//{
-	//	MoveAction = MoveActionObject.Object;
-	//	UE_LOG(MainCharacterController, Log, TEXT("Found MoveActionObject"));
-	//}
-	//else {
-	//	UE_LOG(MainCharacterController, Warning, TEXT("MoveActionObject not found"));
-	//}
-	////Look Action
-	//static ConstructorHelpers::FObjectFinder<UInputAction> LookActionObject(TEXT("/Script/EnhancedInput.InputAction'/Game/ThirdPerson/Input/Actions/IA_Look.IA_Look'"));
-	//if (LookActionObject.Succeeded())
-	//{
-	//	LookAction = LookActionObject.Object;
-	//	UE_LOG(MainCharacterController, Log, TEXT("Found LookActionObject"));
-	//}
-	//else {
-	//	UE_LOG(MainCharacterController, Warning, TEXT("LookActionObject not found"));
-	//}
-	////Jump Action
-	//static ConstructorHelpers::FObjectFinder<UInputAction> JumpActionObject(TEXT("/Script/EnhancedInput.InputAction'/Game/ThirdPerson/Input/Actions/IA_Jump.IA_Jump'"));
-	//if (JumpActionObject.Succeeded())
-	//{
-	//	JumpAction = JumpActionObject.Object;
-	//	UE_LOG(MainCharacterController, Log, TEXT("Found JumpActionObject"));
-	//}
-	//else {
-	//	UE_LOG(MainCharacterController, Warning, TEXT("JumpActionObject not found"));
-	//}
-	////Input Mapping Context
-	//static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMCObject(TEXT("/Script/EnhancedInput.InputMappingContext'/Game/ThirdPerson/Input/IMC_Default.IMC_Default'"));
-	//if (IMCObject.Succeeded())
-	//{
-	//	InputMappingContext = IMCObject.Object;
-	//	UE_LOG(MainCharacterController, Log, TEXT("Found IMCObject"));
-	//}
-	//else {
-	//	UE_LOG(MainCharacterController, Warning, TEXT("IMCObject not found"));
-	//}
-
+	
 	//Bind Input Actions
 	//Attempts to bind if a valid value was provided.
 	//Move

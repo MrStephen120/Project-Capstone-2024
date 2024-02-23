@@ -37,6 +37,31 @@ void AMainCharacter::BeginPlay()
 	HandleJumpSmokeRing();
 }
 
+void AMainCharacter::UpdateMovementState()
+{
+	switch (CurrentState)
+	{
+	case EMovementState::Idle:
+		break;
+	case EMovementState::Walking:
+		break;
+	case EMovementState::Running:
+		break;
+	case EMovementState::Jumping:
+		break;
+	case EMovementState::DoubleJumping:
+		break;
+	case EMovementState::Diving:
+		break;
+	case EMovementState::LedgeGrabbing:
+		break;
+	case EMovementState::WallSliding:
+		break;
+	case EMovementState::WallJumping:
+		break;
+	}
+}
+
 void AMainCharacter::HandleWalkParticles()
 {
 	FVector ActorBounds = GetRootComponent()->Bounds.BoxExtent;
@@ -130,11 +155,11 @@ void AMainCharacter::SetUpCamera()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 }
+
 void AMainCharacter::AddMovementInput(FVector WorldDirection, float ScaleValue, bool bForce)
 {
 	Super::AddMovementInput(WorldDirection, ScaleValue, bForce);
 }
-
 
 void AMainCharacter::AirJump()
 {	

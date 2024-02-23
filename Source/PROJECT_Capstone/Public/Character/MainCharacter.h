@@ -9,6 +9,30 @@
 #include "NiagaraSystem.h"
 #include "MainCharacter.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
+
+USTRUCT(BlueprintType)
+struct FMovementParameters
+{
+	GENERATED_BODY()
+
+	// Walking
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Walking")
+	float WalkSpeed;
+
+	// Running
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Running")
+	float RunSpeed;
+
+	// Jumping
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Jumping")
+	float JumpHeight;
+
+	// Wall Sliding
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Wall Sliding")
+	float WallSlideSpeed;
+};
+
 UENUM()
 enum class EMovementState
 {
@@ -23,21 +47,24 @@ enum class EMovementState
 	WallJumping
 };
 
-DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
 UCLASS()
 class PROJECT_CAPSTONE_API AMainCharacter : public ACharacter
 {
-	GENERATED_BODY()
 private:
+	GENERATED_BODY()
+	
 	//SetUp Camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
+	//Current movement state of the character
+	EMovementState CurrentState;
+	
 	//For Debug Line
 	FVector PreviousPosition;
-
+	
 	//Particles
 	//Dust Trail
 	UNiagaraComponent* WalkingParticlesComponent;
@@ -45,14 +72,12 @@ private:
 	//Jump Dust Ring
 	UNiagaraComponent* SmokeRingParticleComponent;
 	bool CanSmokeRingParticles;
-public:
-	// Sets default values for this character's properties
-	AMainCharacter(const FObjectInitializer& object);
-
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	void UpdateMovementState();
+	
 public:
 	//Particle
 	//Dust Trail
@@ -62,6 +87,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Effects")
 	UNiagaraSystem* JumpSmokeRing;
 
+	// Sets default values for this character's properties
+	AMainCharacter(const FObjectInitializer& object);
+	
 	void HandleWalkParticles();
 	void HandleJumpSmokeRing();
 
@@ -78,6 +106,7 @@ public:
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
 
 	void AirJump();
+	
 	virtual void Jump() override;
 
 	virtual void StopJumping() override;
