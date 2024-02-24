@@ -9,7 +9,7 @@
 #include "Components/InputComponent.h"
 #include "Character/MainCharacterMovement.h"
 #include "Game/MainCharacterController.h"
-
+#include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
 DEFINE_LOG_CATEGORY(MainCharacter);
@@ -28,6 +28,81 @@ AMainCharacter::AMainCharacter(const FObjectInitializer& object)
 	SetUpCamera();
 }
 
+void AMainCharacter::ChangeState(EMovementState NewState)
+{
+	CurrentState = NewState;
+}
+
+void AMainCharacter::UpdateState(float DeltaTime)
+{
+	if (IsCharacterIdle())
+	{
+		ChangeState(EMovementState::Idle);
+	}
+	else if (IsCharaterMovingOnGround())
+	{
+		ChangeState(EMovementState::Running);
+	}
+	
+	switch (CurrentState)
+	{
+	case EMovementState::Idle:
+		HandleIdleState(DeltaTime);
+		break;
+	case EMovementState::Running:
+		HandleRunningState(DeltaTime);
+		break;
+	case EMovementState::Jumping:
+		HandleJumpState(DeltaTime);
+		break;
+	case EMovementState::AirJump:
+		HandleAirJumpState(DeltaTime);
+		break;
+	case EMovementState::Landing:
+		HandleLandingState(DeltaTime);
+		break;
+	case EMovementState::Diving:
+		//HandleDivingState(DeltaTime);
+		break;
+	case EMovementState::LedgeGrab:
+		//HandleLedgeGrabState(DeltaTime);
+		break;
+	case EMovementState::WallSlide:
+		//HandleWallSideState(DeltaTime);
+		break;
+	}
+}
+
+void AMainCharacter::HandleIdleState(float DeltaTime)
+{
+	HandleWalkParticles();
+	DebugState();
+}
+
+void AMainCharacter::HandleRunningState(float DeltaTime)
+{
+	HandleWalkParticles();
+	DebugState();
+}
+
+void AMainCharacter::HandleJumpState(float DeltaTime)
+{
+	HandleWalkParticles();
+	DebugState();
+}
+
+void AMainCharacter::HandleAirJumpState(float DeltaTime)
+{
+	HandleWalkParticles();
+	DebugState();
+}
+
+void AMainCharacter::HandleLandingState(float DeltaTime)
+{
+	DebugState();
+}
+
+
 // Called when the game starts or when spawned
 void AMainCharacter::BeginPlay()
 {
@@ -35,31 +110,6 @@ void AMainCharacter::BeginPlay()
 
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
-}
-
-void AMainCharacter::UpdateMovementState()
-{
-	switch (CurrentState)
-	{
-	case EMovementState::Idle:
-		break;
-	case EMovementState::Walking:
-		break;
-	case EMovementState::Running:
-		break;
-	case EMovementState::Jumping:
-		break;
-	case EMovementState::DoubleJumping:
-		break;
-	case EMovementState::Diving:
-		break;
-	case EMovementState::LedgeGrabbing:
-		break;
-	case EMovementState::WallSliding:
-		break;
-	case EMovementState::WallJumping:
-		break;
-	}
 }
 
 void AMainCharacter::HandleWalkParticles()
@@ -83,7 +133,7 @@ void AMainCharacter::HandleWalkParticles()
 		CanSpawnWalkParticles = false;
 	}
 
-	if (GetCharacterMovement()->IsMovingOnGround() && GetVelocity().Size() > 0)
+	if (IsCharacterMovingOnGround())
 	{
 		if (WalkingParticlesComponent && !CanSpawnWalkParticles)
 		{
@@ -123,6 +173,33 @@ void AMainCharacter::HandleJumpSmokeRing()
 	}
 }
 
+bool AMainCharacter::IsCharacterIdle()
+{
+	//Check if Velocity is close to ZERO
+	const FVector Velocity = GetVelocity();
+	const bool IsMoving = !Velocity.IsNearlyZero((1.0f));
+
+	//Check if there are no WASD inputs.
+	
+	return !IsMoving;
+}
+
+bool AMainCharacter::IsCharacterGrounded()
+{
+	return GetCharacterMovement()->IsWalking();
+}
+
+bool AMainCharacter::IsCharacterMovingOnGround()
+{
+	if (IsCharacterGrounded())
+	{
+		FVector Velocity = GetVelocity();
+		float Speed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
+		return Speed > KINDA_SMALL_NUMBER;
+	}
+	return false;
+}
+
 void AMainCharacter::SetUpCharacterMovementSettings()
 {
 	//Don't rotate character when the controller rotates. ONLY let it affect the camera.
@@ -133,11 +210,11 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 	// Configure character movement	
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
-	GetCharacterMovement()->JumpZVelocity = 400.0f;
+	GetCharacterMovement()->JumpZVelocity = 200.0f;
 	GetCharacterMovement()->AirControl = 5.0f;
-	GetCharacterMovement()->GravityScale = 4.0f;
+	GetCharacterMovement()->GravityScale = 2.0f;
 	GetCharacterMovement()->FallingLateralFriction = 0.1f;
-	JumpMaxHoldTime = 0.1f;
+	JumpMaxHoldTime = 0.05f;
 	JumpMaxCount = 2.0f;
 }
 
@@ -176,7 +253,6 @@ void AMainCharacter::AirJump()
 void AMainCharacter::Jump()
 {
 	Super::Jump();
-
 	HandleJumpSmokeRing();
 }
 
@@ -188,6 +264,7 @@ void AMainCharacter::StopJumping()
 
 void AMainCharacter::Landed(const FHitResult& Hit)
 {
+	ChangeState(EMovementState::Landing);
 	AMainCharacterController* MyController = Cast<AMainCharacterController>(GetController());
 	if (MyController) {
 		MyController->ResetJump();
@@ -197,7 +274,7 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 	HandleJumpSmokeRing();
 }
 
-void AMainCharacter::Debug()
+void AMainCharacter::DebugLine()
 {
 	// Get the current position of the character
 	FVector CurrentPosition = GetActorLocation();
@@ -218,12 +295,20 @@ void AMainCharacter::Debug()
 	PreviousPosition = CurrentPosition;
 }
 
+void AMainCharacter::DebugState()
+{
+	const FString DebugText = FString::Printf(TEXT("Current State: %s"), *UEnum::GetValueAsString(CurrentState));
+	const FColor TextColor = FColor::Green;
+	float Duration = 3.0f;
+	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, DebugText);
+}
+
 // Called every frame
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	HandleWalkParticles();
-	//Debug();
+	UpdateState(DeltaTime);
+	//DebugState();
 }
 
 // Called to bind functionality to input

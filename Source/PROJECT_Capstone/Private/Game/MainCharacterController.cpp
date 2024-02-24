@@ -90,6 +90,7 @@ void AMainCharacterController::HandleJumpAction()
 
 			if (!PlayerCharacter->GetCharacterMovement()->IsFalling()) {
 				//Ground Jump
+				PlayerCharacter->ChangeState(EMovementState::Jumping);
 				PlayerCharacter->Jump();
 				++JumpCount;
 				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);
@@ -97,6 +98,7 @@ void AMainCharacterController::HandleJumpAction()
 			//For Future Use: Check if it's a wall jump, if false then it's an air jump.
 
 			else { //AirJump
+				PlayerCharacter->ChangeState(EMovementState::AirJump);
 				PlayerCharacter->AirJump();
 				++JumpCount;
 				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);

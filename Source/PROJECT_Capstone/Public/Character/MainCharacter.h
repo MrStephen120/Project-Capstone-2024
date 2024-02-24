@@ -37,14 +37,13 @@ UENUM()
 enum class EMovementState
 {
 	Idle,
-	Walking,
 	Running,
 	Jumping,
-	DoubleJumping,
+	AirJump,
+	Landing,
 	Diving,
-	LedgeGrabbing,
-	WallSliding,
-	WallJumping
+	LedgeGrab,
+	WallSlide
 };
 
 UCLASS()
@@ -58,9 +57,6 @@ private:
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
-
-	//Current movement state of the character
-	EMovementState CurrentState;
 	
 	//For Debug Line
 	FVector PreviousPosition;
@@ -74,46 +70,70 @@ private:
 	bool CanSmokeRingParticles;
 	
 protected:
+	//Current movement state of the character
+	EMovementState CurrentState;
+	void UpdateState(float DeltaTime);
+	//State Specific Methods
+	void HandleIdleState(float DeltaTime);
+	void HandleRunningState(float DeltaTime);
+	void HandleJumpState(float DeltaTime);
+	void HandleAirJumpState(float DeltaTime);
+	void HandleLandingState(float DeltaTime);
+	//void HandleDivingState(float DeltaTime);
+	// void HandleLedgeGrabState(float DeltaTime);
+	// void HandleWallSlideState(float DeltaTime);
+	
+	//Check if Character has no inputs and velocity = 0;
+	bool IsCharacterIdle();
+	//Check if Character is grounded
+	bool IsCharacterGrounded();
+	//Check if Character is moving on ground
+	bool IsCharacterMovingOnGround();
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	void UpdateMovementState();
-	
-public:
-	//Particle
-	//Dust Trail
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UNiagaraSystem* WalkSmokeTrail;
-	//Jump Dust Ring
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UNiagaraSystem* JumpSmokeRing;
 
-	// Sets default values for this character's properties
-	AMainCharacter(const FObjectInitializer& object);
-	
+	//Particle Methods
 	void HandleWalkParticles();
 	void HandleJumpSmokeRing();
-
-	//Getters for Camera Components
-	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
+	
 	//Set up CharacterMovement Settings
 	void SetUpCharacterMovementSettings();
 
 	//Set up Camera Settings
 	void SetUpCamera();
 
+	//For Debug
+	void DebugLine();
+	void DebugState();
+	
+public:
+	//Changes State of Player Character
+	void ChangeState(EMovementState NewState);
+	
+	//Dust Particle
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* WalkSmokeTrail;
+	//Jump Dust Particle
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* JumpSmokeRing;
+
+	// Sets default values for this character's properties
+	AMainCharacter(const FObjectInitializer& object);
+
+	//Getters for Camera Components
+	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
 
-	void AirJump();
+	virtual void AirJump();
 	
 	virtual void Jump() override;
 
 	virtual void StopJumping() override;
 
 	virtual void Landed(const FHitResult& Hit) override;
-	//For Debug
-	void Debug();
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
