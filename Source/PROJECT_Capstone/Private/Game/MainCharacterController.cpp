@@ -91,14 +91,7 @@ void AMainCharacterController::HandleMoveAction(const FInputActionValue& Value)
 
 void AMainCharacterController::HandleJumpAction()
 {
-	if (JumpDelegate.IsBound())
-	{
-		JumpDelegate.Broadcast();
-	}
-	
-	//*Input is 'Digital' (value not used here)
-	//*Make the Player's Character Pawn jump, disabling crouch if it was active
-	//PlayerCharacter->ChangeState(EMovementState::Jumping);
+	PlayerCharacter->HandleJumpRequest();
 }
 
 void AMainCharacterController::HandleStopJumping()
@@ -109,7 +102,6 @@ void AMainCharacterController::HandleStopJumping()
 void AMainCharacterController::HandleDiveAction()
 {
 	PlayerCharacter->ChangeState(EMovementState::Diving);
-	PlayerCharacter->Dive();
 }
 
 void AMainCharacterController::HandleLookAction(const FInputActionValue& Value)

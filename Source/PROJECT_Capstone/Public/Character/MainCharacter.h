@@ -5,7 +5,6 @@
 #include <CoreMinimal.h>
 #include <GameFramework/Character.h>
 #include "NiagaraComponent.h"
-#include "../Plugins/CustomStateMachine/Source/CustomStateMachine/Public/Game/StateManagerComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "MainCharacter.generated.h"
@@ -38,13 +37,15 @@ UENUM()
 enum class EMovementState
 {
 	Idle,
+	Walking,
 	Running,
 	Jumping,
+	InAir,
 	AirJump,
 	Landing,
 	Diving,
-	LedgeGrab,
-	WallSlide
+	WallSlide,
+	WallJump,
 };
 
 UCLASS()
@@ -58,6 +59,9 @@ private:
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
+	//Current movement state of the character
+	EMovementState CurrentState;
 	
 	//For Debug Line
 	FVector PreviousPosition;
@@ -69,11 +73,13 @@ private:
 	//Jump Dust Ring
 	UNiagaraComponent* SmokeRingParticleComponent;
 	bool CanSmokeRingParticles;
-
+	
+public:
+	//Changes State of Player Character
+	void ChangeState(EMovementState NewState);
 	
 protected:
-	//Current movement state of the character
-	EMovementState CurrentState;
+	//Updates State on Tick
 	void UpdateState();
 	//==|State Specific Methods|==
 	//Idle
@@ -81,16 +87,19 @@ protected:
 	//Run
 	void HandleRunningState();
 	//Jump
-	void HandleJumpState();
+public: void HandleJumpRequest();
+protected: void HandleJumpState();
 	bool CanJump = true;
+	//In-Air
+	void HandleInAirState();
 	//AirJump
 	void HandleAirJumpState();
 	//Landing
 	void HandleLandingState();
 	//Diving
 	void HandleDivingState();
-	// void HandleLedgeGrabState();
-	// void HandleWallSlideState();
+	bool CanDive = false;
+	bool Diving = false;
 	
 	//Check if Character has no inputs and velocity = 0;
 	bool IsCharacterIdle();
@@ -101,29 +110,40 @@ protected:
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	
+public:
+	//Particle
+	//Dust Trail
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* WalkSmokeTrail;
+	//Jump Dust Ring
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* JumpSmokeRing;
 
-	//Particle Methods
+	// Sets default values for this character's properties
+	AMainCharacter(const FObjectInitializer& object);
+	
 	void HandleWalkParticles();
 		void ActivateWalkParticles();
 		void DeActivateWalkParticles();
 	
 	void HandleJumpSmokeRing();
-	
+
+	//Getters for Camera Components
+	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
 	//Set up CharacterMovement Settings
 	void SetUpCharacterMovementSettings();
 
 	//Set up Camera Settings
 	void SetUpCamera();
-
+	
 	//For Debug
-	void DebugLine();
 	void DebugState();
 	void DebugText(FString Text);
 	
 public:
-	//State Machine
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UStateManagerComponent* StateManager;
 	//Movement Values
 	//Default Gravity Scale
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
@@ -138,30 +158,10 @@ public:
 	float DiveSpeed = 1000.0f ;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
 	float DiveGravityScale = 0.0f;
-
-	//State Change Requests
-	void HandleJumpRequest();
 	
-	//Changes State of Player Character
-	void ChangeState(EMovementState NewState);
-	
-	//Dust Particle
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UNiagaraSystem* WalkSmokeTrail;
-	//Jump Dust Particle
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UNiagaraSystem* JumpSmokeRing;
-
-	// Sets default values for this character's properties
-	AMainCharacter(const FObjectInitializer& object);
-
-	//Getters for Camera Components
-	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
 
-	virtual void AirJump();
+	void AirJump();
 	
 	virtual void Dive();
 	
@@ -170,6 +170,8 @@ public:
 	virtual void StopJumping() override;
 
 	virtual void Landed(const FHitResult& Hit) override;
+	//For Debug
+	void Debug();
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

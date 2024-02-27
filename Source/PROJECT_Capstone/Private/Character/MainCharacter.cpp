@@ -5,20 +5,17 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "Character/MainCharacterMovement.h"
 #include "Game/MainCharacterController.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
-#include "Evaluation/IMovieSceneEvaluationHook.h"
 
 DEFINE_LOG_CATEGORY(MainCharacter);
 // Sets default values
 AMainCharacter::AMainCharacter(const FObjectInitializer& object)
 {
-	//State Manager
-	StateManager = CreateDefaultSubobject<UStateManagerComponent>(TEXT("StateManager"));
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
@@ -41,11 +38,16 @@ void AMainCharacter::UpdateState()
 	case EMovementState::Idle:
 		HandleIdleState();
 		break;
+	case EMovementState::Walking:
+		break;
 	case EMovementState::Running:
 		HandleRunningState();
 		break;
 	case EMovementState::Jumping:
 		HandleJumpState();
+		break;
+	case EMovementState::InAir:
+		HandleInAirState();
 		break;
 	case EMovementState::AirJump:
 		HandleAirJumpState();
@@ -56,72 +58,104 @@ void AMainCharacter::UpdateState()
 	case EMovementState::Diving:
 		HandleDivingState();
 		break;
-	case EMovementState::LedgeGrab:
-		//HandleLedgeGrabState(DeltaTime);
-		break;
 	case EMovementState::WallSlide:
 		//HandleWallSideState(DeltaTime);
+		break;
+	case EMovementState::WallJump:
 		break;
 	}
 }
 
 void AMainCharacter::HandleIdleState()
 {
-	DebugState();
 	DeActivateWalkParticles();
 }
 
 void AMainCharacter::HandleRunningState()
 {
-	DebugState();
 	HandleWalkParticles();
 }
 
 void AMainCharacter::HandleJumpRequest()
 {
+	if (CanJump && JumpCount < JumpMaxCount)
+	{
+		if (!GetCharacterMovement()->IsFalling())
+		{ //Ground Jump
+			ChangeState(EMovementState::Jumping);
+		}
+		//For Future Use: Check if it's a wall jump, if false then it's an air jump.
+		else
+		{ //AirJump
+			ChangeState(EMovementState::AirJump);
+		}
+	}
 }
 
 void AMainCharacter::HandleJumpState()
 {
-	if (CanJump && JumpCount < JumpMaxCount)
-	{
-		if (!GetCharacterMovement()->IsFalling())
-		{
-			//Ground Jump
-			Jump();
-			++JumpCount;
-		}
-		//For Future Use: Check if it's a wall jump, if false then it's an air jump.
-		else { //AirJump
-			AirJump();
-			++JumpCount;
-		}
-	}
-	DebugState();
+	//Jump
+	Jump();
+	++JumpCount;
+
+	//Handle Particles
+	DeActivateWalkParticles();
+	HandleJumpSmokeRing();
+}
+
+void AMainCharacter::HandleInAirState()
+{
+	DeActivateWalkParticles();
 }
 
 void AMainCharacter::HandleAirJumpState()
 {
-	DebugState();
+	//AirJump
+	AirJump();
+	++JumpCount;
+
+	//Handle Particles
+	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::HandleLandingState()
 {
-	DebugState();
 }
 
 void AMainCharacter::HandleDivingState()
 {
-	DebugState();
+	Dive();
 }
 
+bool AMainCharacter::IsCharacterIdle()
+{
+	//Check if Velocity is close to ZERO
+	const FVector Velocity = GetVelocity();
+	const bool IsMoving = !Velocity.IsNearlyZero((1.0f));
+	//Check if there are no WASD inputs.
+	return !IsMoving;
+}
+
+bool AMainCharacter::IsCharacterGrounded()
+{
+	return GetCharacterMovement()->IsWalking();
+}
+
+bool AMainCharacter::IsCharacterMovingOnGround()
+{
+	if (IsCharacterGrounded())
+	{
+		FVector Velocity = GetVelocity();
+		float Speed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
+		return Speed > KINDA_SMALL_NUMBER;
+	}
+	return false;
+}
 
 // Called when the game starts or when spawned
 void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	StateManager->InitStateManager();
-	
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
 }
@@ -130,16 +164,6 @@ void AMainCharacter::HandleWalkParticles()
 {
 	FVector ActorBounds = GetRootComponent()->Bounds.BoxExtent;
 	float HalfHeight = ActorBounds.Z;
-
-	if (IsCharacterMovingOnGround())
-	{
-		ActivateWalkParticles();
-	}
-	else
-	{
-		DeActivateWalkParticles();
-	}
-	
 	if (!WalkingParticlesComponent)
 	{
 		WalkingParticlesComponent = UNiagaraFunctionLibrary::SpawnSystemAttached
@@ -154,6 +178,15 @@ void AMainCharacter::HandleWalkParticles()
 
 		WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 0.0f);
 		CanSpawnWalkParticles = false;
+	}
+	
+	if (IsCharacterMovingOnGround())
+	{
+		ActivateWalkParticles();
+	}
+	else
+	{
+		DeActivateWalkParticles();
 	}
 }
 
@@ -197,33 +230,6 @@ void AMainCharacter::HandleJumpSmokeRing()
 	}
 }
 
-bool AMainCharacter::IsCharacterIdle()
-{
-	//Check if Velocity is close to ZERO
-	const FVector Velocity = GetVelocity();
-	const bool IsMoving = !Velocity.IsNearlyZero((1.0f));
-
-	//Check if there are no WASD inputs.
-	
-	return !IsMoving;
-}
-
-bool AMainCharacter::IsCharacterGrounded()
-{
-	return GetCharacterMovement()->IsWalking();
-}
-
-bool AMainCharacter::IsCharacterMovingOnGround()
-{
-	if (IsCharacterGrounded())
-	{
-		FVector Velocity = GetVelocity();
-		float Speed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
-		return Speed > KINDA_SMALL_NUMBER;
-	}
-	return false;
-}
-
 void AMainCharacter::SetUpCharacterMovementSettings()
 {
 	//Don't rotate character when the controller rotates. ONLY let it affect the camera.
@@ -238,7 +244,7 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 	GetCharacterMovement()->AirControl = 5.0f;
 	GetCharacterMovement()->GravityScale = DefaultGravity;
 	GetCharacterMovement()->FallingLateralFriction = 0.1f;
-	JumpMaxHoldTime = 0.05f;
+	JumpMaxHoldTime = 0.1f;
 	JumpMaxCount = 2.0f;
 }
 
@@ -263,30 +269,18 @@ void AMainCharacter::AddMovementInput(FVector WorldDirection, float ScaleValue, 
 }
 
 void AMainCharacter::AirJump()
-{	
+{
 	//Reset Jump Velocity
 	GetCharacterMovement()->Velocity = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
 
 	//JumpForce Velocity
 	FVector JumpForceVel = (GetVelocity() + FVector(0.0f, 0.0f, GetCharacterMovement()->JumpZVelocity));
 	GetCharacterMovement()->Launch(JumpForceVel);
-
-	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::Dive()
 {
-	if (GetCharacterMovement()->IsFalling()) // Check if the character is in the air
-	{
-		FVector ForwardDirection = GetActorForwardVector();
-		FVector DiveVelocity = ForwardDirection * DiveSpeed; // DiveSpeed is a variable you can adjust
-		DiveVelocity.Z = GetCharacterMovement()->Velocity.Z; // Maintain current vertical velocity
-
-		GetCharacterMovement()->Velocity = DiveVelocity; // Set the character's velocity to the dive velocity
-
-		// Optionally, apply an additional downward force or modify gravity for the dive arc
-		GetCharacterMovement()->GravityScale = DiveGravityScale; // DiveGravityScale is an increased gravity scale during the dive
-	}
+	//Dive Math
 }
 
 void AMainCharacter::Jump()
@@ -297,9 +291,6 @@ void AMainCharacter::Jump()
 	//JumpForce Velocity
 	FVector JumpForceVel = (GetVelocity() + FVector(0.0f, 0.0f, GetCharacterMovement()->JumpZVelocity));
 	GetCharacterMovement()->Launch(JumpForceVel);
-	
-	DeActivateWalkParticles();
-	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::StopJumping()
@@ -322,7 +313,7 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 	HandleJumpSmokeRing();
 }
 
-void AMainCharacter::DebugLine()
+void AMainCharacter::Debug()
 {
 	// Get the current position of the character
 	FVector CurrentPosition = GetActorLocation();
@@ -347,7 +338,7 @@ void AMainCharacter::DebugState()
 {
 	const FString DebugText = FString::Printf(TEXT("Current State: %s"), *UEnum::GetValueAsString(CurrentState));
 	const FColor TextColor = FColor::Green;
-	float Duration = 1.0f;
+	float Duration = 0.1f;
 	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, DebugText);
 }
 
@@ -364,6 +355,7 @@ void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	UpdateState();
+
 	if (IsCharacterIdle())
 	{
 		ChangeState(EMovementState::Idle);
@@ -372,8 +364,15 @@ void AMainCharacter::Tick(float DeltaTime)
 	{
 		ChangeState(EMovementState::Running);
 	}
+	else if (!IsCharacterMovingOnGround())
+	{
+		ChangeState(EMovementState::InAir);
+	}
+
+	//Debugging
+	DebugState();
+	Debug();
 	
-	//DebugState();
 }
 
 // Called to bind functionality to input

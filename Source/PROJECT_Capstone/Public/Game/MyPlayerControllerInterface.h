@@ -15,9 +15,6 @@ class UMyPlayerControllerInterface : public UInterface
 	GENERATED_BODY()
 };
 
-/**
- * 
- */
 class PROJECT_CAPSTONE_API IMyPlayerControllerInterface
 {
 	GENERATED_BODY()
