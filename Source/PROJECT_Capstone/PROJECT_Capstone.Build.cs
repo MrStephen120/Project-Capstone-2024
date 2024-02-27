@@ -9,7 +9,16 @@ public class PROJECT_Capstone : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" , "EnhancedInput" , "Niagara" });
+		PublicDependencyModuleNames.AddRange(new string[] 
+		{ 
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"Niagara",
+			"CustomStateMachine"
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

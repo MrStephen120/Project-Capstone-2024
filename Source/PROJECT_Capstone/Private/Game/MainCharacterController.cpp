@@ -2,7 +2,6 @@
 
 
 #include "Game/MainCharacterController.h"
-#include "Character/MainCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -47,6 +46,11 @@ void AMainCharacterController::OnPossess(APawn* aPawn)
 		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleJumpAction);
 		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &AMainCharacterController::HandleStopJumping);
 	}
+	//Dive
+	if (DiveAction)
+	{
+		EnhancedInput->BindAction(DiveAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleDiveAction);
+	}
 }
 
 void AMainCharacterController::OnUnPossess()
@@ -56,6 +60,11 @@ void AMainCharacterController::OnUnPossess()
 
 	// Call the parent method, in case it needs to do anything.
 	Super::OnUnPossess();
+}
+
+FJumpSignature* AMainCharacterController::GetJumpDelegate()
+{
+	return &JumpDelegate;
 }
 
 void AMainCharacterController::HandleMoveAction(const FInputActionValue& Value)
@@ -82,37 +91,25 @@ void AMainCharacterController::HandleMoveAction(const FInputActionValue& Value)
 
 void AMainCharacterController::HandleJumpAction()
 {
-	// Input is 'Digital' (value not used here)
-	// Make the Player's Character Pawn jump, disabling crouch if it was active
-	if (PlayerCharacter)
+	if (JumpDelegate.IsBound())
 	{
-		if (JumpCount < PlayerCharacter->JumpMaxCount) {
-
-			if (!PlayerCharacter->GetCharacterMovement()->IsFalling()) {
-				//Ground Jump
-				PlayerCharacter->ChangeState(EMovementState::Jumping);
-				PlayerCharacter->Jump();
-				++JumpCount;
-				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);
-			}
-			//For Future Use: Check if it's a wall jump, if false then it's an air jump.
-
-			else { //AirJump
-				PlayerCharacter->ChangeState(EMovementState::AirJump);
-				PlayerCharacter->AirJump();
-				++JumpCount;
-				UE_LOG(MainCharacterController, Log, TEXT("JumpCount value: %d"), JumpCount);
-			}
-		}
+		JumpDelegate.Broadcast();
 	}
+	
+	//*Input is 'Digital' (value not used here)
+	//*Make the Player's Character Pawn jump, disabling crouch if it was active
+	//PlayerCharacter->ChangeState(EMovementState::Jumping);
 }
 
 void AMainCharacterController::HandleStopJumping()
 {
-	if (PlayerCharacter)
-	{
-		PlayerCharacter->StopJumping();
-	}
+	PlayerCharacter->StopJumping();
+}
+
+void AMainCharacterController::HandleDiveAction()
+{
+	PlayerCharacter->ChangeState(EMovementState::Diving);
+	PlayerCharacter->Dive();
 }
 
 void AMainCharacterController::HandleLookAction(const FInputActionValue& Value)

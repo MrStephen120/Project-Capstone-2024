@@ -9,7 +9,8 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
-				"Engine"
+				"Engine",
+				"CustomStateMachine"
 			]
 		}
 	],
@@ -32,10 +33,6 @@
 			"SupportedTargetPlatforms": [
 				"Win64"
 			]
-		},
-		{
-			"Name": "CustomStateMachine",
-			"Enabled": false
 		}
 	]
 }

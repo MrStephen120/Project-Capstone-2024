@@ -11,17 +11,18 @@
 #include "Game/MainCharacterController.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "Evaluation/IMovieSceneEvaluationHook.h"
 
 DEFINE_LOG_CATEGORY(MainCharacter);
 // Sets default values
 AMainCharacter::AMainCharacter(const FObjectInitializer& object)
 {
-	// AMainCharacter::AMainCharacter(const FObjectInitializer& object) : Super(object.SetDefaultSubobjectClass<UMainCharacterMovement>(ACharacter::CharacterMovementComponentName))
-	
+	//State Manager
+	StateManager = CreateDefaultSubobject<UStateManagerComponent>(TEXT("StateManager"));
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	SetActorTickInterval(0.5f);
+	
+	SetActorTickInterval(0.1f);
 	SetActorTickEnabled(true);
 
 	SetUpCharacterMovementSettings();
@@ -33,36 +34,27 @@ void AMainCharacter::ChangeState(EMovementState NewState)
 	CurrentState = NewState;
 }
 
-void AMainCharacter::UpdateState(float DeltaTime)
+void AMainCharacter::UpdateState()
 {
-	if (IsCharacterIdle())
-	{
-		ChangeState(EMovementState::Idle);
-	}
-	else if (IsCharaterMovingOnGround())
-	{
-		ChangeState(EMovementState::Running);
-	}
-	
 	switch (CurrentState)
 	{
 	case EMovementState::Idle:
-		HandleIdleState(DeltaTime);
+		HandleIdleState();
 		break;
 	case EMovementState::Running:
-		HandleRunningState(DeltaTime);
+		HandleRunningState();
 		break;
 	case EMovementState::Jumping:
-		HandleJumpState(DeltaTime);
+		HandleJumpState();
 		break;
 	case EMovementState::AirJump:
-		HandleAirJumpState(DeltaTime);
+		HandleAirJumpState();
 		break;
 	case EMovementState::Landing:
-		HandleLandingState(DeltaTime);
+		HandleLandingState();
 		break;
 	case EMovementState::Diving:
-		//HandleDivingState(DeltaTime);
+		HandleDivingState();
 		break;
 	case EMovementState::LedgeGrab:
 		//HandleLedgeGrabState(DeltaTime);
@@ -73,31 +65,52 @@ void AMainCharacter::UpdateState(float DeltaTime)
 	}
 }
 
-void AMainCharacter::HandleIdleState(float DeltaTime)
+void AMainCharacter::HandleIdleState()
 {
+	DebugState();
+	DeActivateWalkParticles();
+}
+
+void AMainCharacter::HandleRunningState()
+{
+	DebugState();
 	HandleWalkParticles();
+}
+
+void AMainCharacter::HandleJumpRequest()
+{
+}
+
+void AMainCharacter::HandleJumpState()
+{
+	if (CanJump && JumpCount < JumpMaxCount)
+	{
+		if (!GetCharacterMovement()->IsFalling())
+		{
+			//Ground Jump
+			Jump();
+			++JumpCount;
+		}
+		//For Future Use: Check if it's a wall jump, if false then it's an air jump.
+		else { //AirJump
+			AirJump();
+			++JumpCount;
+		}
+	}
 	DebugState();
 }
 
-void AMainCharacter::HandleRunningState(float DeltaTime)
+void AMainCharacter::HandleAirJumpState()
 {
-	HandleWalkParticles();
 	DebugState();
 }
 
-void AMainCharacter::HandleJumpState(float DeltaTime)
+void AMainCharacter::HandleLandingState()
 {
-	HandleWalkParticles();
 	DebugState();
 }
 
-void AMainCharacter::HandleAirJumpState(float DeltaTime)
-{
-	HandleWalkParticles();
-	DebugState();
-}
-
-void AMainCharacter::HandleLandingState(float DeltaTime)
+void AMainCharacter::HandleDivingState()
 {
 	DebugState();
 }
@@ -107,7 +120,8 @@ void AMainCharacter::HandleLandingState(float DeltaTime)
 void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	StateManager->InitStateManager();
+	
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
 }
@@ -117,6 +131,15 @@ void AMainCharacter::HandleWalkParticles()
 	FVector ActorBounds = GetRootComponent()->Bounds.BoxExtent;
 	float HalfHeight = ActorBounds.Z;
 
+	if (IsCharacterMovingOnGround())
+	{
+		ActivateWalkParticles();
+	}
+	else
+	{
+		DeActivateWalkParticles();
+	}
+	
 	if (!WalkingParticlesComponent)
 	{
 		WalkingParticlesComponent = UNiagaraFunctionLibrary::SpawnSystemAttached
@@ -132,24 +155,25 @@ void AMainCharacter::HandleWalkParticles()
 		WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 0.0f);
 		CanSpawnWalkParticles = false;
 	}
+}
 
-	if (IsCharacterMovingOnGround())
+void AMainCharacter::ActivateWalkParticles()
+{
+	if (WalkingParticlesComponent && !CanSpawnWalkParticles)
 	{
-		if (WalkingParticlesComponent && !CanSpawnWalkParticles)
-		{
-				//UE_LOG(LogTemp, Warning, TEXT("Activating Particle System"));
-				WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 10.0f);
-				CanSpawnWalkParticles = true;
-		}
+		//UE_LOG(LogTemp, Warning, TEXT("Activating Particle System"));
+		WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 10.0f);
+		CanSpawnWalkParticles = true;
 	}
-	else
+}
+
+void AMainCharacter::DeActivateWalkParticles()
+{
+	if (WalkingParticlesComponent && CanSpawnWalkParticles)
 	{
-		if (WalkingParticlesComponent && CanSpawnWalkParticles)
-		{
-			//UE_LOG(LogTemp, Warning, TEXT("De-Activating Particle System"));
-			WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 0.0f);
-			CanSpawnWalkParticles = false;
-		}
+		//UE_LOG(LogTemp, Warning, TEXT("De-Activating Particle System"));
+		WalkingParticlesComponent->SetNiagaraVariableFloat(TEXT("SpawnRate"), 0.0f);
+		CanSpawnWalkParticles = false;
 	}
 }
 
@@ -210,9 +234,9 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 	// Configure character movement	
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
-	GetCharacterMovement()->JumpZVelocity = 200.0f;
+	GetCharacterMovement()->JumpZVelocity = 750.0f;
 	GetCharacterMovement()->AirControl = 5.0f;
-	GetCharacterMovement()->GravityScale = 2.0f;
+	GetCharacterMovement()->GravityScale = DefaultGravity;
 	GetCharacterMovement()->FallingLateralFriction = 0.1f;
 	JumpMaxHoldTime = 0.05f;
 	JumpMaxCount = 2.0f;
@@ -244,22 +268,43 @@ void AMainCharacter::AirJump()
 	GetCharacterMovement()->Velocity = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
 
 	//JumpForce Velocity
-	FVector JumpForceVel = (GetVelocity() + FVector(0.0f, 0.0f, 900.0f));
-	LaunchCharacter(JumpForceVel, true, true);
+	FVector JumpForceVel = (GetVelocity() + FVector(0.0f, 0.0f, GetCharacterMovement()->JumpZVelocity));
+	GetCharacterMovement()->Launch(JumpForceVel);
 
 	HandleJumpSmokeRing();
 }
 
+void AMainCharacter::Dive()
+{
+	if (GetCharacterMovement()->IsFalling()) // Check if the character is in the air
+	{
+		FVector ForwardDirection = GetActorForwardVector();
+		FVector DiveVelocity = ForwardDirection * DiveSpeed; // DiveSpeed is a variable you can adjust
+		DiveVelocity.Z = GetCharacterMovement()->Velocity.Z; // Maintain current vertical velocity
+
+		GetCharacterMovement()->Velocity = DiveVelocity; // Set the character's velocity to the dive velocity
+
+		// Optionally, apply an additional downward force or modify gravity for the dive arc
+		GetCharacterMovement()->GravityScale = DiveGravityScale; // DiveGravityScale is an increased gravity scale during the dive
+	}
+}
+
 void AMainCharacter::Jump()
 {
-	Super::Jump();
+	//Reset Jump Velocity
+	GetCharacterMovement()->Velocity = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
+
+	//JumpForce Velocity
+	FVector JumpForceVel = (GetVelocity() + FVector(0.0f, 0.0f, GetCharacterMovement()->JumpZVelocity));
+	GetCharacterMovement()->Launch(JumpForceVel);
+	
+	DeActivateWalkParticles();
 	HandleJumpSmokeRing();
 }
 
 void AMainCharacter::StopJumping()
 {
 	Super::StopJumping();
-
 }
 
 void AMainCharacter::Landed(const FHitResult& Hit)
@@ -269,7 +314,10 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 	if (MyController) {
 		MyController->ResetJump();
 	}
-
+	// Reset gravity scale
+	GetCharacterMovement()->GravityScale = DefaultGravity;
+	
+	ResetJump();
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
 }
@@ -299,6 +347,14 @@ void AMainCharacter::DebugState()
 {
 	const FString DebugText = FString::Printf(TEXT("Current State: %s"), *UEnum::GetValueAsString(CurrentState));
 	const FColor TextColor = FColor::Green;
+	float Duration = 1.0f;
+	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, DebugText);
+}
+
+void AMainCharacter::DebugText(FString Text)
+{
+	const FString DebugText = Text;
+	const FColor TextColor = FColor::Red;
 	float Duration = 3.0f;
 	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, DebugText);
 }
@@ -307,7 +363,16 @@ void AMainCharacter::DebugState()
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UpdateState(DeltaTime);
+	UpdateState();
+	if (IsCharacterIdle())
+	{
+		ChangeState(EMovementState::Idle);
+	}
+	else if (IsCharacterMovingOnGround())
+	{
+		ChangeState(EMovementState::Running);
+	}
+	
 	//DebugState();
 }
 

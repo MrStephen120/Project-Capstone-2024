@@ -7,6 +7,8 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
+#include "Character/MainCharacter.h"
+#include "Game/MyPlayerControllerInterface.h"
 #include "MainCharacterController.generated.h"
 
 // Forward Declarations
@@ -16,26 +18,32 @@ class UInputMappingContext;
 
 DECLARE_LOG_CATEGORY_EXTERN(MainCharacterController, Log, All);
 UCLASS(Abstract)
-class PROJECT_CAPSTONE_API AMainCharacterController : public APlayerController
+class PROJECT_CAPSTONE_API AMainCharacterController : public APlayerController, public IMyPlayerControllerInterface
 {
 
 	GENERATED_BODY()
 
+private:	FJumpSignature JumpDelegate; 
+protected:	virtual FJumpSignature* GetJumpDelegate() override; //If anyone gets the JumpDelegate through this method, it will know if player pressed Jump.
+	
 public:
 	// Enhanced Input Assets
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
 	TObjectPtr<UInputAction> MoveAction = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Jump Action")
 	TObjectPtr<UInputAction> JumpAction = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
-	TObjectPtr<UInputAction> LookAction = nullptr; 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera Action")
+	TObjectPtr<UInputAction> LookAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dive Action")
+	TObjectPtr<UInputAction> DiveAction = nullptr; 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Jump")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Jump")
 	int JumpCount;
 
 	UFUNCTION(BlueprintCallable)
@@ -50,6 +58,9 @@ protected:
 	void HandleJumpAction();
 	void HandleStopJumping();
 
+	//void Dive();
+	void HandleDiveAction();
+	
 	//void Look();
 	void HandleLookAction(const FInputActionValue& Value);
 

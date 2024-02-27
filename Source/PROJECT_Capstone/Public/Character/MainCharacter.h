@@ -5,6 +5,7 @@
 #include <CoreMinimal.h>
 #include <GameFramework/Character.h>
 #include "NiagaraComponent.h"
+#include "../Plugins/CustomStateMachine/Source/CustomStateMachine/Public/Game/StateManagerComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "MainCharacter.generated.h"
@@ -68,20 +69,28 @@ private:
 	//Jump Dust Ring
 	UNiagaraComponent* SmokeRingParticleComponent;
 	bool CanSmokeRingParticles;
+
 	
 protected:
 	//Current movement state of the character
 	EMovementState CurrentState;
-	void UpdateState(float DeltaTime);
-	//State Specific Methods
-	void HandleIdleState(float DeltaTime);
-	void HandleRunningState(float DeltaTime);
-	void HandleJumpState(float DeltaTime);
-	void HandleAirJumpState(float DeltaTime);
-	void HandleLandingState(float DeltaTime);
-	//void HandleDivingState(float DeltaTime);
-	// void HandleLedgeGrabState(float DeltaTime);
-	// void HandleWallSlideState(float DeltaTime);
+	void UpdateState();
+	//==|State Specific Methods|==
+	//Idle
+	void HandleIdleState();
+	//Run
+	void HandleRunningState();
+	//Jump
+	void HandleJumpState();
+	bool CanJump = true;
+	//AirJump
+	void HandleAirJumpState();
+	//Landing
+	void HandleLandingState();
+	//Diving
+	void HandleDivingState();
+	// void HandleLedgeGrabState();
+	// void HandleWallSlideState();
 	
 	//Check if Character has no inputs and velocity = 0;
 	bool IsCharacterIdle();
@@ -95,6 +104,9 @@ protected:
 
 	//Particle Methods
 	void HandleWalkParticles();
+		void ActivateWalkParticles();
+		void DeActivateWalkParticles();
+	
 	void HandleJumpSmokeRing();
 	
 	//Set up CharacterMovement Settings
@@ -106,8 +118,30 @@ protected:
 	//For Debug
 	void DebugLine();
 	void DebugState();
+	void DebugText(FString Text);
 	
 public:
+	//State Machine
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UStateManagerComponent* StateManager;
+	//Movement Values
+	//Default Gravity Scale
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
+	float DefaultGravity = 2.0f;
+	//Jump
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
+	int JumpCount = 0;
+	UFUNCTION(BlueprintCallable)
+	void ResetJump() { CanJump = true; JumpCount = 0; };
+	//Diving
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
+	float DiveSpeed = 1000.0f ;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
+	float DiveGravityScale = 0.0f;
+
+	//State Change Requests
+	void HandleJumpRequest();
+	
 	//Changes State of Player Character
 	void ChangeState(EMovementState NewState);
 	
@@ -128,6 +162,8 @@ public:
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
 
 	virtual void AirJump();
+	
+	virtual void Dive();
 	
 	virtual void Jump() override;
 
