@@ -19,6 +19,7 @@ struct FMovementParameters
 	// Walking
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Walking")
 	float WalkSpeed;
+	float MaxSpeed;
 
 	// Running
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Running")
@@ -28,6 +29,10 @@ struct FMovementParameters
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Jumping")
 	float JumpHeight;
 
+	// Wall Sliding
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Diving")
+	float DiveSpeed;
+	
 	// Wall Sliding
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Wall Sliding")
 	float WallSlideSpeed;
@@ -65,6 +70,7 @@ private:
 	
 	//For Debug Line
 	FVector PreviousPosition;
+	FVector CurrentPosition;
 	
 	//Particles
 	//Dust Trail
@@ -74,6 +80,9 @@ private:
 	UNiagaraComponent* SmokeRingParticleComponent;
 	bool CanSmokeRingParticles;
 	
+	//Animation Instance
+	UAnimInstance* AnimInstance;
+	FBoolProperty* bDiveAnimProperty;
 public:
 	//Changes State of Player Character
 	void ChangeState(EMovementState NewState);
@@ -89,7 +98,6 @@ protected:
 	//Jump
 public: void HandleJumpRequest();
 protected: void HandleJumpState();
-	bool CanJump = true;
 	//In-Air
 	void HandleInAirState();
 	//AirJump
@@ -98,8 +106,6 @@ protected: void HandleJumpState();
 	void HandleLandingState();
 	//Diving
 	void HandleDivingState();
-	bool CanDive = false;
-	bool Diving = false;
 	
 	//Check if Character has no inputs and velocity = 0;
 	bool IsCharacterIdle();
@@ -122,7 +128,8 @@ public:
 
 	// Sets default values for this character's properties
 	AMainCharacter(const FObjectInitializer& object);
-	
+
+	//Particle Methods
 	void HandleWalkParticles();
 		void ActivateWalkParticles();
 		void DeActivateWalkParticles();
@@ -149,6 +156,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
 	float DefaultGravity = 2.0f;
 	//Jump
+	bool CanJump = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
 	int JumpCount = 0;
 	UFUNCTION(BlueprintCallable)
