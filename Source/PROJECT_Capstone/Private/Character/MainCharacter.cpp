@@ -35,6 +35,7 @@ void AMainCharacter::BeginPlay()
 	//Initialize Particles
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
+	HandleDiveParticles();
 }
 
 // Called every frame
@@ -59,9 +60,9 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 
 	// Configure character movement	
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, DefaultRotationRate, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 750.0f;
-	GetCharacterMovement()->AirControl = 5.0f;
+	GetCharacterMovement()->AirControl = DefaultAirControl;
 	GetCharacterMovement()->GravityScale = DefaultGravity;
 	GetCharacterMovement()->FallingLateralFriction = 0.1f;
 	JumpMaxHoldTime = 0.1f;
@@ -73,7 +74,7 @@ void AMainCharacter::SetUpCamera()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
+	CameraBoom->TargetArmLength = 400.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 	CameraBoom->bEnableCameraLag = true;
 
@@ -89,6 +90,14 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+void AMainCharacter::DiveSqueezeUpdate(float alpha)
+{
+	GetMesh()->SetRelativeScale3D(FMath::Lerp(BaseScale, BaseScale * DiveSqueezeFactor, alpha ));
+}
+
+void AMainCharacter::DiveSqueezeFinish()
+{
+}
 void AMainCharacter::JumpSqueezeUpdate(float alpha)
 {
 	GetMesh()->SetRelativeScale3D(FMath::Lerp(BaseScale, BaseScale * JumpSqueezeFactor, alpha ));
@@ -111,6 +120,17 @@ void AMainCharacter::InitializeSquashStretchTimelines()
 {
 	//Initialize Base Scale
 	BaseScale = GetMesh()->GetRelativeScale3D();
+
+	//DiveSqueeze Timeline Initialization
+	FOnTimelineFloat FDiveSqueezeUpdate;
+	FOnTimelineEvent FDiveSqueezeFinished;
+	FDiveSqueezeUpdate.BindUFunction(this, FName("DiveSqueezeUpdate"));
+	FDiveSqueezeFinished.BindUFunction(this, FName("DiveSqueezeFinish"));
+	DiveSqueezeTimeline.AddInterpFloat(SquashStretchCurve, FDiveSqueezeUpdate);
+	DiveSqueezeTimeline.SetLooping(false);
+	DiveSqueezeTimeline.SetPlayRate(0.25f);
+	DiveSqueezeTimeline.SetTimelineLength(DiveLength);
+	DiveSqueezeTimeline.SetTimelineFinishedFunc(FDiveSqueezeFinished);
 	
 	//JumpSqueeze Timeline Initialization.
 	FOnTimelineFloat FJumpSqueezeUpdate;
@@ -137,6 +157,7 @@ void AMainCharacter::TimelineTicks(float deltaTime)
 {
 	JumpSqueezeTimeline.TickTimeline(deltaTime);
 	LandSquishTimeline.TickTimeline(deltaTime);
+	DiveSqueezeTimeline.TickTimeline(deltaTime);
 }
 
 void AMainCharacter::ChangeState(EMovementState NewState)
@@ -245,22 +266,29 @@ void AMainCharacter::HandleAirJumpState()
 	//AirJump
 	AirJump();
 	++JumpCount;
-
-	//Play Timeline
-	JumpSqueezeTimeline.PlayFromStart();
 	
 	//Handle Particles
 	HandleJumpSmokeRing();
+	//Play Timeline
+	JumpSqueezeTimeline.PlayFromStart();
 }
 
 void AMainCharacter::HandleLandingState()
 {
-	
+	DeActivateDiveParticles();
 }
 
 void AMainCharacter::HandleDivingState()
 {
-	Dive();
+	if (CanDive)
+	{
+		Dive();
+		
+		//VFX Here
+		ActivateDiveParticles();
+		//Play Timeline
+		DiveSqueezeTimeline.PlayFromStart();
+	}
 }
 
 bool AMainCharacter::IsCharacterIdle()
@@ -305,6 +333,48 @@ void AMainCharacter::HandleJumpSmokeRing()
 
 	if (SmokeRingParticleComponent->IsComplete()) {
 		SmokeRingParticleComponent->DestroyComponent();
+	}
+}
+
+void AMainCharacter::ActivateDiveParticles()
+{
+	//Activate
+	if (!CanDiveParticles && DiveParticleComponent)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Activating Particle System"));
+		DiveParticleComponent->SetNiagaraVariableFloat(TEXT("RateSpawn"), 15.0f);
+		CanDiveParticles = true;
+	}
+}
+
+void AMainCharacter::DeActivateDiveParticles()
+{
+	//Deactivate
+	if (CanDiveParticles && DiveParticleComponent)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Activating Particle System"));
+		DiveParticleComponent->SetNiagaraVariableFloat(TEXT("RateSpawn"), 0.0f);
+		CanDiveParticles = false;
+	}
+}
+
+void AMainCharacter::HandleDiveParticles()
+{
+	FVector ActorBounds = GetRootComponent()->Bounds.BoxExtent;
+	float HalfHeight = ActorBounds.Z;
+	if (!DiveParticleComponent)
+	{
+		DiveParticleComponent = UNiagaraFunctionLibrary::SpawnSystemAttached
+		(DiveTrail,
+		GetRootComponent(),
+		NAME_None,
+		FVector(0.0f, 0.0f, HalfHeight),
+		FRotator(0.0f),
+		EAttachLocation::SnapToTarget,
+		true);
+		UE_LOG(LogTemp, Warning, TEXT("Spawning Dive Particles."));
+		DiveParticleComponent->SetNiagaraVariableFloat(TEXT("RateSpawn"), 0.0f);
+		CanDiveParticles = false;
 	}
 }
 
@@ -375,7 +445,29 @@ void AMainCharacter::AirJump()
 
 void AMainCharacter::Dive()
 {
+	isDiving = true;
+	CanDive = false;
+	//Delay Timer
+	FTimerHandle DiveTimer;
+	//Set CharacterMovement Values
+	GetCharacterMovement()->GravityScale = DiveGravityScale;
+	GetCharacterMovement()->RotationRate = FRotator(0.0f,0.0f,0.0f);
+	GetCharacterMovement()->AirControl = 0.0f;
+	
 	//Dive Math
+	FVector DiveForce = ((GetActorForwardVector() * DiveSpeed) + GetActorUpVector() * 300.0f);
+	GetCharacterMovement()->Launch(DiveForce);
+	
+	//Start Cooldown Timer
+	GetWorld()->GetTimerManager().SetTimer(DiveTimer, this, &AMainCharacter::DiveReset, DiveLength, false);
+}
+
+void AMainCharacter::DiveReset()
+{
+	isDiving = false;
+	CanDive = true;
+	DeActivateDiveParticles();
+	ResetToDefaults();
 }
 
 void AMainCharacter::Jump()
@@ -393,18 +485,23 @@ void AMainCharacter::StopJumping()
 	Super::StopJumping();
 }
 
+void AMainCharacter::ResetToDefaults()
+{
+	// Reset gravity scale
+	GetCharacterMovement()->GravityScale = DefaultGravity;
+	//Reset Rotation Rate
+	GetCharacterMovement()->RotationRate = FRotator(0.0f,DefaultRotationRate,0.0f);
+	//Reset Air Control
+	GetCharacterMovement()->AirControl = DefaultAirControl;
+}
+
 void AMainCharacter::Landed(const FHitResult& Hit)
 {
 	ChangeState(EMovementState::Landing);
-	AMainCharacterController* MyController = Cast<AMainCharacterController>(GetController());
-	if (MyController) {
-		MyController->ResetJump();
-	}
-	// Reset gravity scale
-	GetCharacterMovement()->GravityScale = DefaultGravity;
-
+	
 	//Reset Jump Values
 	ResetJump();
+	ResetToDefaults();
 
 	//VFX & SFX
 	LandSquishTimeline.PlayFromStart();

@@ -43,12 +43,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Jump")
-	int JumpCount;
-
-	UFUNCTION(BlueprintCallable)
-	void ResetJump() { JumpCount = 0; };
-
 protected:
 	// Enhanced Input Action Handlers
 	//void Move();

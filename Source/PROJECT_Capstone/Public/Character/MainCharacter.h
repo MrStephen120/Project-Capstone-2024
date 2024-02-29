@@ -10,8 +10,8 @@
 #include "NiagaraSystem.h"
 #include "MainCharacter.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
 
+DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
 class UCurveFloat;
 
 USTRUCT(BlueprintType)
@@ -61,10 +61,10 @@ class PROJECT_CAPSTONE_API AMainCharacter : public ACharacter
 {
 private:
 	GENERATED_BODY()
-
 	// Sets default values for this character's properties
 	AMainCharacter(const FObjectInitializer& object);
 	//Getters for Camera Components
+private:
 	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	//Set up CharacterMovement Settings
@@ -79,15 +79,21 @@ private:
 	
 public:
 	//Particles
+	//Dive Trail
+	UPROPERTY(EditAnywhere, Category = "Particles")
+	UNiagaraSystem* DiveTrail;
 	//Dust Trail
-	UPROPERTY(EditAnywhere, Category = "Effects")
+	UPROPERTY(EditAnywhere, Category = "Particles")
 	UNiagaraSystem* WalkSmokeTrail;
 	//Jump Dust Ring
-	UPROPERTY(EditAnywhere, Category = "Effects")
+	UPROPERTY(EditAnywhere, Category = "Particles")
 	UNiagaraSystem* JumpSmokeRing;
 
 private:
-	//Particles
+	//* Particles
+	//Dive Trail
+	UNiagaraComponent* DiveParticleComponent;
+	bool CanDiveParticles;
 	//Dust Trail
 	UNiagaraComponent* WalkingParticlesComponent;
 	bool CanSpawnWalkParticles;
@@ -100,31 +106,41 @@ private:
 	void ActivateWalkParticles();
 	void DeActivateWalkParticles();
 	void HandleJumpSmokeRing();
+	void ActivateDiveParticles();
+	void DeActivateDiveParticles();
+	void HandleDiveParticles();
 
 //* Squash & Stretch Section *//
-private:
+protected:
 	//Squash & Stretch
 	FVector BaseScale;
-	FVector JumpSqueezeFactor = FVector(0.6f,0.6f,1.25f);
-	FVector LandSquishFactor = FVector (1.1f,1.1f,0.6f);
-	void TimelineTicks(float deltaTime);
-protected:
+	//Get Float Curve
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Squash & Stretch")
 	UCurveFloat* SquashStretchCurve = nullptr;
+	//DiveSqueeze Timeline;
+	FTimeline DiveSqueezeTimeline;
+	UFUNCTION()
+	void DiveSqueezeUpdate(float alpha);
+	UFUNCTION()
+	void DiveSqueezeFinish();
+	FVector DiveSqueezeFactor = FVector(0.6f,2.0f,0.6f);
 	//JumpSqueeze Timeline
 	FTimeline JumpSqueezeTimeline;
 	UFUNCTION()
 	void JumpSqueezeUpdate(float alpha);
 	UFUNCTION()
 	void JumpSqueezeFinish();
+	FVector JumpSqueezeFactor = FVector(0.6f,0.6f,1.25f);
 	//LandSquash Timeline
 	FTimeline LandSquishTimeline;
 	UFUNCTION()
 	void LandSquishUpdate(float alpha);
 	UFUNCTION()
 	void LandSquishFinish();
+	FVector LandSquishFactor = FVector (1.25f,1.25f,0.6f);
 	//Initialize Squash & Stretch Timelines
 	void InitializeSquashStretchTimelines();
+	void TimelineTicks(float deltaTime);
 //* End of Squash & Stretch Section *//
 
 public:
@@ -179,6 +195,10 @@ public:
 	//Default Gravity Scale
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
 	float DefaultGravity = 2.5f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
+	float DefaultRotationRate = 540.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
+	float DefaultAirControl = 5.0f;
 	//Jump
 	bool CanJump = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
@@ -186,23 +206,28 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetJump() { CanJump = true; JumpCount = 0; };
 	//Diving
+	bool CanDive = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
 	bool isDiving = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
-	float DiveSpeed = 750.0f ;
+	float DiveSpeed = 1250.0f ;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
-	float DiveGravityScale = 1.0f;
+	float DiveGravityScale = 1.5f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
-	float DiveLength = 0.5f ;
+	float DiveLength = 0.25f ;
 
 	//Movement Methods
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
 
-	void AirJump();
+	virtual void AirJump();
+	
 	virtual void Dive();
+	virtual void DiveReset();
+	
 	virtual void Jump() override;
 	virtual void StopJumping() override;
 
+	void ResetToDefaults();
 	virtual void Landed(const FHitResult& Hit) override;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
