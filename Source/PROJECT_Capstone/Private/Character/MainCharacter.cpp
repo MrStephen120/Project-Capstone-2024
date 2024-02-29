@@ -11,6 +11,7 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "EntitySystem/MovieSceneEntitySystemRunner.h"
 
 DEFINE_LOG_CATEGORY(MainCharacter);
 // Sets default values
@@ -18,18 +19,6 @@ AMainCharacter::AMainCharacter(const FObjectInitializer& object)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	SetActorTickInterval(0.1f);
-	SetActorTickEnabled(true);
-
-	//Get Animator and Appropriate Values
-	if (!AnimInstance)
-    {
-		AnimInstance = GetMesh()->GetAnimInstance();
-	}
-	if (AnimInstance)
-	{
-		bDiveAnimProperty = FindFProperty<FBoolProperty>(AnimInstance->GetClass(), "Dive");
-	}
 	
 	SetUpCharacterMovementSettings();
 	SetUpCamera();
@@ -39,6 +28,11 @@ AMainCharacter::AMainCharacter(const FObjectInitializer& object)
 void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	// Initialize the timelines
+	InitializeSquashStretchTimelines();
+	
+	//Initialize Particles
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
 }
@@ -47,25 +41,13 @@ void AMainCharacter::BeginPlay()
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
 	UpdateState();
 	
-	DebugState();
-	Debug();
-
-	if (IsCharacterIdle())
-	{
-		ChangeState(EMovementState::Idle);
-	}
-	else if (IsCharacterMovingOnGround())
-	{
-		ChangeState(EMovementState::Running);
-	}
-	else if (!IsCharacterMovingOnGround())
-	{
-		ChangeState(EMovementState::InAir);
-	}
+	//Handle Timeline ticks
+	TimelineTicks(DeltaTime);
 	
+	//Check if player is Grounded
+	HandleGrounded();
 }
 
 void AMainCharacter::SetUpCharacterMovementSettings()
@@ -105,6 +87,56 @@ void AMainCharacter::SetUpCamera()
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void AMainCharacter::JumpSqueezeUpdate(float alpha)
+{
+	GetMesh()->SetRelativeScale3D(FMath::Lerp(BaseScale, BaseScale * JumpSqueezeFactor, alpha ));
+}
+
+void AMainCharacter::JumpSqueezeFinish()
+{
+}
+
+void AMainCharacter::LandSquishUpdate(float alpha)
+{
+	GetMesh()->SetRelativeScale3D(FMath::Lerp(BaseScale, BaseScale * LandSquishFactor, alpha ));
+}
+
+void AMainCharacter::LandSquishFinish()
+{
+}
+
+void AMainCharacter::InitializeSquashStretchTimelines()
+{
+	//Initialize Base Scale
+	BaseScale = GetMesh()->GetRelativeScale3D();
+	
+	//JumpSqueeze Timeline Initialization.
+	FOnTimelineFloat FJumpSqueezeUpdate;
+	FOnTimelineEvent FJumpSqueezeFinished;
+	FJumpSqueezeUpdate.BindUFunction(this, FName("JumpSqueezeUpdate"));
+	FJumpSqueezeFinished.BindUFunction(this, FName("JumpSqueezeFinish"));
+	JumpSqueezeTimeline.AddInterpFloat(SquashStretchCurve, FJumpSqueezeUpdate);
+	JumpSqueezeTimeline.SetLooping(false);
+	JumpSqueezeTimeline.SetTimelineLength(0.25f);
+	JumpSqueezeTimeline.SetTimelineFinishedFunc(FJumpSqueezeFinished);
+	
+	//LandSquash Timeline Initialization.
+	FOnTimelineFloat FSquishProgressUpdate;
+	FOnTimelineEvent FSquishFinished;
+	FSquishFinished.BindUFunction(this, FName("LandSquishFinish"));
+	FSquishProgressUpdate.BindUFunction(this, FName("LandSquishUpdate"));
+	LandSquishTimeline.AddInterpFloat(SquashStretchCurve, FSquishProgressUpdate);
+	LandSquishTimeline.SetLooping(false);
+	LandSquishTimeline.SetTimelineLength(0.25f);
+	LandSquishTimeline.SetTimelineFinishedFunc(FSquishFinished);
+}
+
+void AMainCharacter::TimelineTicks(float deltaTime)
+{
+	JumpSqueezeTimeline.TickTimeline(deltaTime);
+	LandSquishTimeline.TickTimeline(deltaTime);
 }
 
 void AMainCharacter::ChangeState(EMovementState NewState)
@@ -147,6 +179,22 @@ void AMainCharacter::UpdateState()
 	}
 }
 
+void AMainCharacter::HandleGrounded()
+{
+	if (IsCharacterIdle())
+	{
+		ChangeState(EMovementState::Idle);
+	}
+	else if (IsCharacterMovingOnGround())
+	{
+		ChangeState(EMovementState::Running);
+	}
+	else if (!IsCharacterMovingOnGround())
+	{
+		ChangeState(EMovementState::InAir);
+	}
+}
+
 void AMainCharacter::HandleIdleState()
 {
 	DeActivateWalkParticles();
@@ -179,6 +227,9 @@ void AMainCharacter::HandleJumpState()
 	Jump();
 	++JumpCount;
 
+	//Play Timeline
+	JumpSqueezeTimeline.PlayFromStart();
+	
 	//Handle Particles
 	DeActivateWalkParticles();
 	HandleJumpSmokeRing();
@@ -195,6 +246,9 @@ void AMainCharacter::HandleAirJumpState()
 	AirJump();
 	++JumpCount;
 
+	//Play Timeline
+	JumpSqueezeTimeline.PlayFromStart();
+	
 	//Handle Particles
 	HandleJumpSmokeRing();
 }
@@ -206,12 +260,6 @@ void AMainCharacter::HandleLandingState()
 
 void AMainCharacter::HandleDivingState()
 {
-	if (bDiveAnimProperty != nullptr)
-	{
-		DebugText("Wee I'm Diving!");
-		bDiveAnimProperty->SetPropertyValue_InContainer(AnimInstance, true);
-	}
-	
 	Dive();
 }
 
@@ -354,8 +402,12 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 	}
 	// Reset gravity scale
 	GetCharacterMovement()->GravityScale = DefaultGravity;
-	
+
+	//Reset Jump Values
 	ResetJump();
+
+	//VFX & SFX
+	LandSquishTimeline.PlayFromStart();
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
 }
