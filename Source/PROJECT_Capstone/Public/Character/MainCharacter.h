@@ -123,7 +123,7 @@ protected:
 	void DiveSqueezeUpdate(float alpha);
 	UFUNCTION()
 	void DiveSqueezeFinish();
-	FVector DiveSqueezeFactor = FVector(0.6f,2.0f,0.6f);
+	FVector DiveSqueezeFactor = FVector(0.6f,1.6f,0.6f);
 	//JumpSqueeze Timeline
 	FTimeline JumpSqueezeTimeline;
 	UFUNCTION()
