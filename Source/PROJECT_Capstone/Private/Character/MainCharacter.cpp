@@ -10,6 +10,8 @@
 #include "Game/MainCharacterController.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 #include "EntitySystem/MovieSceneEntitySystemRunner.h"
 
@@ -42,13 +44,19 @@ void AMainCharacter::BeginPlay()
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
 	UpdateState();
+	DebugState();
 	
 	//Handle Timeline ticks
 	TimelineTicks(DeltaTime);
-	
-	//Check if player is Grounded
+	//Grounded Check
 	HandleGrounded();
+	//Idle Check
+	if (IsCharacterIdle())
+	{
+		ChangeState(EMovementState::Idle);
+	}
 }
 
 void AMainCharacter::SetUpCharacterMovementSettings()
@@ -60,11 +68,12 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 
 	// Configure character movement	
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, DefaultRotationRate, 0.0f);
-	GetCharacterMovement()->JumpZVelocity = 750.0f;
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, DefaultYRotationRate, 0.0f);
+	GetCharacterMovement()->JumpZVelocity = DefaultJumpZVelocity;
 	GetCharacterMovement()->AirControl = DefaultAirControl;
 	GetCharacterMovement()->GravityScale = DefaultGravity;
 	GetCharacterMovement()->FallingLateralFriction = 0.1f;
+	
 	JumpMaxHoldTime = 0.1f;
 	JumpMaxCount = 2.0f;
 }
@@ -193,20 +202,17 @@ void AMainCharacter::UpdateState()
 		HandleDivingState();
 		break;
 	case EMovementState::WallSlide:
-		//HandleWallSideState(DeltaTime);
+		//HandleWallSlideState();
 		break;
 	case EMovementState::WallJump:
+		HandleWallJumpState();
 		break;
 	}
 }
 
 void AMainCharacter::HandleGrounded()
 {
-	if (IsCharacterIdle())
-	{
-		ChangeState(EMovementState::Idle);
-	}
-	else if (IsCharacterMovingOnGround())
+	if (IsCharacterMovingOnGround())
 	{
 		ChangeState(EMovementState::Running);
 	}
@@ -228,7 +234,7 @@ void AMainCharacter::HandleRunningState()
 
 void AMainCharacter::HandleJumpRequest()
 {
-	if (CanJump && JumpCount < JumpMaxCount)
+	if (!CanWallJump && CanJump && JumpCount < JumpMaxCount)
 	{
 		if (!GetCharacterMovement()->IsFalling())
 		{ //Ground Jump
@@ -239,6 +245,10 @@ void AMainCharacter::HandleJumpRequest()
 		{ //AirJump
 			ChangeState(EMovementState::AirJump);
 		}
+	}
+	else if (CanWallJump && CanJump) //Wall Jump
+	{
+		ChangeState(EMovementState::WallJump);
 	}
 }
 
@@ -258,6 +268,30 @@ void AMainCharacter::HandleJumpState()
 
 void AMainCharacter::HandleInAirState()
 {
+	//Check if in-air and is by a wall.
+	if (CanWallSlide())
+	{
+		//Start Wall Sliding if true. Called by CanWallSlide().
+		IsWallSliding = true;
+		CanDive = false;
+		CanWallJump = true;
+		CanJump = true;
+		
+		ChangeState(EMovementState::WallSlide);
+	}
+	else
+	{
+		//State is isInAir
+		//Gravity back to Normal if been modified.
+		if (!isDiving)
+		{
+			IsWallSliding = false;
+			WallSlideStart = false;
+			
+			GetCharacterMovement()->GravityScale = DefaultGravity;
+		}
+	}
+	
 	DeActivateWalkParticles();
 }
 
@@ -275,7 +309,7 @@ void AMainCharacter::HandleAirJumpState()
 
 void AMainCharacter::HandleLandingState()
 {
-	DeActivateDiveParticles();
+	//Redundant Method, All Landing changes are put inside Landed Event Function.
 }
 
 void AMainCharacter::HandleDivingState()
@@ -291,6 +325,47 @@ void AMainCharacter::HandleDivingState()
 	}
 }
 
+void AMainCharacter::HandleWallSlideState(FRotator outHitNormal)
+{
+	//Called Inside CanWallSlide() method.
+	if (GetVelocity().Z <= 0.0f)
+	{
+		if (!WallSlideStart)
+		{
+			//Do Once
+			WallSlideStart = true;
+			//Immediately Stop Character
+			GetCharacterMovement()->Velocity = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
+			LandSquishTimeline.PlayFromStart();
+		}
+		GetCharacterMovement()->GravityScale = WallSlideGravityScale;
+		GetCharacterMovement()->Velocity = FMath::VInterpTo(GetVelocity(),
+			FVector(0.0f,0.0f,GetVelocity().Z),
+			GetWorld()->DeltaTimeSeconds,
+			WallSlideDeceleration);
+		
+		SetActorRotation(FRotator(0.0f,outHitNormal.Yaw, 0.0f));
+	}
+}
+
+void AMainCharacter::HandleWallJumpState()
+{
+	CanWallJump = false;
+	CanJump = false;
+	//Do WallJump
+	//Set CharacterMovement Values
+	GetCharacterMovement()->GravityScale = DefaultGravity;
+	GetCharacterMovement()->RotationRate = FRotator(0.0f,0.0f,0.0f);
+	GetCharacterMovement()->AirControl = 0.0f;
+	
+	//WallJump Math
+	FVector WallJumpForce = ((GetActorForwardVector() * WallJumpSpeed) + GetActorUpVector() * DefaultJumpZVelocity);
+	GetCharacterMovement()->Launch(WallJumpForce);
+
+	//Stretch
+	JumpSqueezeTimeline.PlayFromStart();
+}
+
 bool AMainCharacter::IsCharacterIdle()
 {
 	//Check if Velocity is close to ZERO
@@ -300,18 +375,48 @@ bool AMainCharacter::IsCharacterIdle()
 	return !IsMoving;
 }
 
-bool AMainCharacter::IsCharacterGrounded()
-{
-	return GetCharacterMovement()->IsWalking();
-}
-
 bool AMainCharacter::IsCharacterMovingOnGround()
 {
-	if (IsCharacterGrounded())
+	if (GetCharacterMovement()->IsWalking())
 	{
 		FVector Velocity = GetVelocity();
 		float Speed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
 		return Speed > KINDA_SMALL_NUMBER;
+	}
+	return false;
+}
+
+bool AMainCharacter::CanWallSlide()
+{
+	if (GetCharacterMovement()->IsFalling())
+	{
+		FHitResult HitResult;
+		FCollisionQueryParams QueryParams = FCollisionQueryParams(FName(TEXT("CapsuleTrace")), true);
+		QueryParams.AddIgnoredActor(this);
+		
+		bool bHitOccurred = GetWorld()->SweepSingleByChannel(
+			HitResult,
+			GetActorLocation(), //Start
+			GetActorLocation(), //End
+			FQuat::Identity,
+			ECC_Visibility,
+			FCollisionShape::MakeCapsule(25.0f, 35.0f),
+			QueryParams
+			);
+
+		if (bHitOccurred)
+		{
+			// Hit
+			if (HitResult.bBlockingHit)
+			{
+				HandleWallSlideState(FRotator(HitResult.Normal.Rotation()));
+				return HitResult.bBlockingHit;
+			}
+		}
+		else
+		{
+			return false;
+		}
 	}
 	return false;
 }
@@ -447,6 +552,7 @@ void AMainCharacter::Dive()
 {
 	isDiving = true;
 	CanDive = false;
+	CanJump = false;
 	//Delay Timer
 	FTimerHandle DiveTimer;
 	//Set CharacterMovement Values
@@ -459,15 +565,14 @@ void AMainCharacter::Dive()
 	GetCharacterMovement()->Launch(DiveForce);
 	
 	//Start Cooldown Timer
-	GetWorld()->GetTimerManager().SetTimer(DiveTimer, this, &AMainCharacter::DiveReset, DiveLength, false);
+	GetWorld()->GetTimerManager().SetTimer(DiveTimer, this, &AMainCharacter::DiveSqueezeFinish, DiveLength, false);
 }
 
-void AMainCharacter::DiveReset()
+void AMainCharacter::ResetDive()
 {
 	isDiving = false;
 	CanDive = true;
 	DeActivateDiveParticles();
-	ResetToDefaults();
 }
 
 void AMainCharacter::Jump()
@@ -483,6 +588,7 @@ void AMainCharacter::Jump()
 void AMainCharacter::StopJumping()
 {
 	Super::StopJumping();
+	//Maybe increase gravity over 0.3 seconds?
 }
 
 void AMainCharacter::ResetToDefaults()
@@ -490,7 +596,7 @@ void AMainCharacter::ResetToDefaults()
 	// Reset gravity scale
 	GetCharacterMovement()->GravityScale = DefaultGravity;
 	//Reset Rotation Rate
-	GetCharacterMovement()->RotationRate = FRotator(0.0f,DefaultRotationRate,0.0f);
+	GetCharacterMovement()->RotationRate = FRotator(0.0f,DefaultYRotationRate,0.0f);
 	//Reset Air Control
 	GetCharacterMovement()->AirControl = DefaultAirControl;
 }
@@ -499,14 +605,21 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 {
 	ChangeState(EMovementState::Landing);
 	
-	//Reset Jump Values
+	IsWallSliding = false;
+	WallSlideStart = false;
+	CanWallJump = false;
+	
 	ResetJump();
+	ResetDive();
 	ResetToDefaults();
 
 	//VFX & SFX
 	LandSquishTimeline.PlayFromStart();
+
+	//Reset/DeActivate Particles
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
+	DeActivateDiveParticles();
 }
 
 void AMainCharacter::Debug()
@@ -540,8 +653,7 @@ void AMainCharacter::DebugState()
 
 void AMainCharacter::DebugText(FString Text)
 {
-	const FString DebugText = Text;
 	const FColor TextColor = FColor::Red;
 	float Duration = 3.0f;
-	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, DebugText);
+	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, Text);
 }
