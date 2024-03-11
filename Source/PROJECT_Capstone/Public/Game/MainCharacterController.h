@@ -38,7 +38,10 @@ public:
 	TObjectPtr<UInputAction> LookAction = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dive Action")
-	TObjectPtr<UInputAction> DiveAction = nullptr; 
+	TObjectPtr<UInputAction> DiveAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WallSlide Action")
+	TObjectPtr<UInputAction> WallSlideAction = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
@@ -54,6 +57,10 @@ protected:
 
 	//void Dive();
 	void HandleDiveAction();
+
+	//void WallSlide();
+	void HandleWallSlideAction();
+	void HandleStopWallSlideAction();
 	
 	//void Look();
 	void HandleLookAction(const FInputActionValue& Value);

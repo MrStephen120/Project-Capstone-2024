@@ -46,7 +46,8 @@ void AMainCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	
 	UpdateState();
-	DebugState();
+	//DebugState();
+	Debug();
 	
 	//Handle Timeline ticks
 	TimelineTicks(DeltaTime);
@@ -137,7 +138,6 @@ void AMainCharacter::InitializeSquashStretchTimelines()
 	FDiveSqueezeFinished.BindUFunction(this, FName("DiveSqueezeFinish"));
 	DiveSqueezeTimeline.AddInterpFloat(SquashStretchCurve, FDiveSqueezeUpdate);
 	DiveSqueezeTimeline.SetLooping(false);
-	DiveSqueezeTimeline.SetPlayRate(0.25f);
 	DiveSqueezeTimeline.SetTimelineLength(DiveLength);
 	DiveSqueezeTimeline.SetTimelineFinishedFunc(FDiveSqueezeFinished);
 	
@@ -172,6 +172,7 @@ void AMainCharacter::TimelineTicks(float deltaTime)
 void AMainCharacter::ChangeState(EMovementState NewState)
 {
 	CurrentState = NewState;
+	//DebugState();
 }
 
 void AMainCharacter::UpdateState()
@@ -234,21 +235,24 @@ void AMainCharacter::HandleRunningState()
 
 void AMainCharacter::HandleJumpRequest()
 {
-	if (!CanWallJump && CanJump && JumpCount < JumpMaxCount)
+	if (CanJump)
 	{
-		if (!GetCharacterMovement()->IsFalling())
-		{ //Ground Jump
-			ChangeState(EMovementState::Jumping);
+		if (!IsWallSliding && !CanWallJump && JumpCount < JumpMaxCount) //Normal Jumps
+		{
+			if (!GetCharacterMovement()->IsFalling())
+			{ //Ground Jump
+				ChangeState(EMovementState::Jumping);
+			}
+			//For Future Use: Check if it's a wall jump, if false then it's an air jump.
+			else
+			{ //AirJump
+				ChangeState(EMovementState::AirJump);
+			}
 		}
-		//For Future Use: Check if it's a wall jump, if false then it's an air jump.
-		else
-		{ //AirJump
-			ChangeState(EMovementState::AirJump);
+		else if (CanWallJump) //Wall Jump
+		{
+			ChangeState(EMovementState::WallJump);
 		}
-	}
-	else if (CanWallJump && CanJump) //Wall Jump
-	{
-		ChangeState(EMovementState::WallJump);
 	}
 }
 
@@ -272,11 +276,6 @@ void AMainCharacter::HandleInAirState()
 	if (CanWallSlide())
 	{
 		//Start Wall Sliding if true. Called by CanWallSlide().
-		IsWallSliding = true;
-		CanDive = false;
-		CanWallJump = true;
-		CanJump = true;
-		
 		ChangeState(EMovementState::WallSlide);
 	}
 	else
@@ -316,6 +315,7 @@ void AMainCharacter::HandleDivingState()
 {
 	if (CanDive)
 	{
+		ResetToDefaults();
 		Dive();
 		
 		//VFX Here
@@ -328,23 +328,35 @@ void AMainCharacter::HandleDivingState()
 void AMainCharacter::HandleWallSlideState(FRotator outHitNormal)
 {
 	//Called Inside CanWallSlide() method.
-	if (GetVelocity().Z <= 0.0f)
+	if (bCanWallSlide)
 	{
-		if (!WallSlideStart)
+		if (GetVelocity().Z <= 0.0f)
 		{
-			//Do Once
-			WallSlideStart = true;
-			//Immediately Stop Character
-			GetCharacterMovement()->Velocity = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
-			LandSquishTimeline.PlayFromStart();
-		}
-		GetCharacterMovement()->GravityScale = WallSlideGravityScale;
-		GetCharacterMovement()->Velocity = FMath::VInterpTo(GetVelocity(),
-			FVector(0.0f,0.0f,GetVelocity().Z),
-			GetWorld()->DeltaTimeSeconds,
-			WallSlideDeceleration);
+			if (!WallSlideStart)
+			{
+				//Do Once
+				WallSlideStart = true;
+				IsWallSliding = true;
+				CanWallJump = true;
+				CanJump = true;
+				
+				CanDive = false;//Disable Diving while WallSliding
+				isDiving = false;
+				
+				//Immediately Stop Character
+				GetCharacterMovement()->Velocity = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
+				LandSquishTimeline.PlayFromStart();
+			}
+			
+			GetCharacterMovement()->GravityScale = WallSlideGravityScale;
+			GetCharacterMovement()->Velocity = FMath::VInterpTo(
+				GetVelocity(),
+				FVector(0.0f,0.0f,GetVelocity().Z),
+				GetWorld()->DeltaTimeSeconds,
+				WallSlideDeceleration);
 		
-		SetActorRotation(FRotator(0.0f,outHitNormal.Yaw, 0.0f));
+			SetActorRotation(FRotator(0.0f,outHitNormal.Yaw, 0.0f));
+		}
 	}
 }
 
@@ -352,6 +364,7 @@ void AMainCharacter::HandleWallJumpState()
 {
 	CanWallJump = false;
 	CanJump = false;
+	CanDive = true;
 	//Do WallJump
 	//Set CharacterMovement Values
 	GetCharacterMovement()->GravityScale = DefaultGravity;
@@ -388,7 +401,7 @@ bool AMainCharacter::IsCharacterMovingOnGround()
 
 bool AMainCharacter::CanWallSlide()
 {
-	if (GetCharacterMovement()->IsFalling())
+	if (bCanWallSlide && GetCharacterMovement()->IsFalling())
 	{
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams = FCollisionQueryParams(FName(TEXT("CapsuleTrace")), true);
@@ -550,9 +563,11 @@ void AMainCharacter::AirJump()
 
 void AMainCharacter::Dive()
 {
+	//Set Bools
 	isDiving = true;
 	CanDive = false;
 	CanJump = false;
+	
 	//Delay Timer
 	FTimerHandle DiveTimer;
 	//Set CharacterMovement Values
@@ -565,9 +580,14 @@ void AMainCharacter::Dive()
 	GetCharacterMovement()->Launch(DiveForce);
 	
 	//Start Cooldown Timer
-	GetWorld()->GetTimerManager().SetTimer(DiveTimer, this, &AMainCharacter::DiveSqueezeFinish, DiveLength, false);
+	GetWorld()->GetTimerManager().SetTimer(DiveTimer, this, &AMainCharacter::DiveEnd, DiveLength, false);
 }
-
+void AMainCharacter::DiveEnd()
+{
+	isDiving = false;
+	ResetToDefaults();
+	DeActivateDiveParticles();
+}
 void AMainCharacter::ResetDive()
 {
 	isDiving = false;
@@ -619,36 +639,41 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 	//Reset/DeActivate Particles
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
-	DeActivateDiveParticles();
 }
 
 void AMainCharacter::Debug()
 {
-	// Get the current position of the character
-	CurrentPosition = GetActorLocation();
+	if (ShowDebugLines)
+	{
+		// Get the current position of the character
+		CurrentPosition = GetActorLocation();
 
-	// Draw a line from the previous position to the current position
-	DrawDebugLine(
-		GetWorld() ,
-		PreviousPosition,  // Start point
-		CurrentPosition,  // End point
-		FColor::Red,  // Line color
-		true,  // Persistent lines
-		1.0f,  // Lifetime (negative means frame only)
-		0,  // Depth priority
-		2.0f  // Thickness
-	);
+		// Draw a line from the previous position to the current position
+		DrawDebugLine(
+			GetWorld() ,
+			PreviousPosition,  // Start point
+			CurrentPosition,  // End point
+			FColor::Red,  // Line color
+			false,  // Persistent lines
+			3.0f,  // Lifetime (negative means frame only)
+			0,  // Depth priority
+			2.0f  // Thickness
+		);
 
-	// Update the previous position for the next frame
-	PreviousPosition = CurrentPosition;
+		// Update the previous position for the next frame
+		PreviousPosition = CurrentPosition;
+	}
 }
 
 void AMainCharacter::DebugState()
 {
-	const FString DebugText = FString::Printf(TEXT("Current State: %s"), *UEnum::GetValueAsString(CurrentState));
-	const FColor TextColor = FColor::Green;
-	float Duration = 0.1f;
-	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, DebugText);
+	if (ShowDebugStates)
+	{
+		const FString DebugText = FString::Printf(TEXT("Current State: %s"), *UEnum::GetValueAsString(CurrentState));
+		const FColor TextColor = FColor::Green;
+		float Duration = 0.1f;
+		GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, DebugText);	
+	}
 }
 
 void AMainCharacter::DebugText(FString Text)

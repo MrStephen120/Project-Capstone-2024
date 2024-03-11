@@ -51,6 +51,11 @@ void AMainCharacterController::OnPossess(APawn* aPawn)
 	{
 		EnhancedInput->BindAction(DiveAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleDiveAction);
 	}
+	//Jump
+	if (WallSlideAction) {
+		EnhancedInput->BindAction(WallSlideAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleWallSlideAction);
+		EnhancedInput->BindAction(WallSlideAction, ETriggerEvent::Completed, this, &AMainCharacterController::HandleStopWallSlideAction);
+	}
 }
 
 void AMainCharacterController::OnUnPossess()
@@ -102,6 +107,16 @@ void AMainCharacterController::HandleStopJumping()
 void AMainCharacterController::HandleDiveAction()
 {
 	PlayerCharacter->ChangeState(EMovementState::Diving);
+}
+
+void AMainCharacterController::HandleWallSlideAction()
+{
+	PlayerCharacter->bCanWallSlide = true;
+}
+
+void AMainCharacterController::HandleStopWallSlideAction()
+{
+	PlayerCharacter->bCanWallSlide = false;
 }
 
 void AMainCharacterController::HandleLookAction(const FInputActionValue& Value)

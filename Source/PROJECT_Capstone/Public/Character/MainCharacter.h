@@ -190,9 +190,14 @@ protected: void HandleJumpState();
 	bool IsCharacterMovingOnGround();
 	//Check if Character is at a wall while in air.
 	bool CanWallSlide();
-
-private:	
+	
+public:
 	//**DEBUGGING**//
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debugging")
+	bool ShowDebugLines = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debugging")
+	bool ShowDebugStates = false;
+private:	
 	void Debug(); //Shows a debug line that traces the character's 3D movements.
 	// These values are for the Debug method above.
 	FVector PreviousPosition;
@@ -231,8 +236,14 @@ public:
 	float DiveGravityScale = 1.75f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
 	float DiveLength = 0.25f ;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
+	float DiveAirControl = 0.1f ;
 	//Wall Sliding + Wall Jumps
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
+	bool bCanWallSlide = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	bool CanWallJump = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	bool WallSlideStart = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	bool IsWallSliding = false;
@@ -253,6 +264,7 @@ public:
 
 	//Diving Methods
 	virtual void Dive();
+	virtual void DiveEnd();
 	UFUNCTION(BlueprintCallable)
 	virtual void ResetDive();
 
