@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include <CoreMinimal.h>
+#include <GameFramework/GameModeBase.h>
+
 #include "GM_Platformer.generated.h"
 
 /**
