@@ -9,8 +9,9 @@
 #include "Character/MainCharacterMovement.h"
 #include "Game/MainCharacterController.h"
 
-#include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Math/Matrix.h"
+#include "Math/Vector.h"
+
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 #include "EntitySystem/MovieSceneEntitySystemRunner.h"
@@ -60,6 +61,27 @@ void AMainCharacter::Tick(float DeltaTime)
 	}
 }
 
+//Called when Character has Landed
+void AMainCharacter::Landed(const FHitResult& Hit)
+{
+	ChangeState(EMovementState::Landing);
+	
+	IsWallSliding = false;
+	WallSlideStart = false;
+	CanWallJump = false;
+	
+	ResetJump();
+	ResetDive();
+	ResetToDefaults();
+
+	//VFX & SFX
+	LandSquishTimeline.PlayFromStart();
+
+	//Reset/DeActivate Particles
+	HandleWalkParticles();
+	HandleJumpSmokeRing();
+}
+
 void AMainCharacter::SetUpCharacterMovementSettings()
 {
 	//Don't rotate character when the controller rotates. ONLY let it affect the camera.
@@ -69,7 +91,7 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 
 	// Configure character movement	
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, DefaultYRotationRate, 0.0f);
+	GetCharacterMovement()->RotationRate = DefaultYRotationRate;
 	GetCharacterMovement()->JumpZVelocity = DefaultJumpZVelocity;
 	GetCharacterMovement()->AirControl = DefaultAirControl;
 	GetCharacterMovement()->GravityScale = DefaultGravity;
@@ -354,7 +376,7 @@ void AMainCharacter::HandleWallSlideState(FRotator outHitNormal)
 				FVector(0.0f,0.0f,GetVelocity().Z),
 				GetWorld()->DeltaTimeSeconds,
 				WallSlideDeceleration);
-		
+
 			SetActorRotation(FRotator(0.0f,outHitNormal.Yaw, 0.0f));
 		}
 	}
@@ -368,8 +390,8 @@ void AMainCharacter::HandleWallJumpState()
 	//Do WallJump
 	//Set CharacterMovement Values
 	GetCharacterMovement()->GravityScale = DefaultGravity;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f,0.0f,0.0f);
-	GetCharacterMovement()->AirControl = 0.0f;
+	GetCharacterMovement()->RotationRate = WallJumpRotationRate;
+	GetCharacterMovement()->AirControl = WallJumpAirControl;
 	
 	//WallJump Math
 	FVector WallJumpForce = ((GetActorForwardVector() * WallJumpSpeed) + GetActorUpVector() * DefaultJumpZVelocity);
@@ -425,7 +447,7 @@ bool AMainCharacter::CanWallSlide()
 				HandleWallSlideState(FRotator(HitResult.Normal.Rotation()));
 				return HitResult.bBlockingHit;
 			}
-		}
+		}	
 		else
 		{
 			return false;
@@ -572,8 +594,8 @@ void AMainCharacter::Dive()
 	FTimerHandle DiveTimer;
 	//Set CharacterMovement Values
 	GetCharacterMovement()->GravityScale = DiveGravityScale;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f,0.0f,0.0f);
-	GetCharacterMovement()->AirControl = 0.0f;
+	GetCharacterMovement()->RotationRate = DiveRotationRate;
+	GetCharacterMovement()->AirControl = DiveAirControl;
 	
 	//Dive Math
 	FVector DiveForce = ((GetActorForwardVector() * DiveSpeed) + GetActorUpVector() * 300.0f);
@@ -616,31 +638,41 @@ void AMainCharacter::ResetToDefaults()
 	// Reset gravity scale
 	GetCharacterMovement()->GravityScale = DefaultGravity;
 	//Reset Rotation Rate
-	GetCharacterMovement()->RotationRate = FRotator(0.0f,DefaultYRotationRate,0.0f);
+	GetCharacterMovement()->RotationRate = DefaultYRotationRate;
 	//Reset Air Control
 	GetCharacterMovement()->AirControl = DefaultAirControl;
 }
 
-void AMainCharacter::Landed(const FHitResult& Hit)
+//Health Methods
+void AMainCharacter::SubtractHealth(int HealthToSubtract)
 {
-	ChangeState(EMovementState::Landing);
-	
-	IsWallSliding = false;
-	WallSlideStart = false;
-	CanWallJump = false;
-	
-	ResetJump();
-	ResetDive();
-	ResetToDefaults();
-
-	//VFX & SFX
-	LandSquishTimeline.PlayFromStart();
-
-	//Reset/DeActivate Particles
-	HandleWalkParticles();
-	HandleJumpSmokeRing();
+	if (CurrentHealth != 0) //if Health isn't empty
+	{
+		CurrentHealth -= HealthToSubtract;
+		DebugText(FString::Printf(TEXT("Health: %i"), CurrentHealth), FColor::Red, 3.0f);
+	}
 }
 
+void AMainCharacter::AddHealth(int HealthToAdd)
+{
+	if (CurrentHealth != MaxHealth) //Health not Max Health
+	{
+		CurrentHealth += HealthToAdd;
+		DebugText(FString::Printf(TEXT("Health: %i"), CurrentHealth), FColor::Green, 3.0f);
+	}
+}
+//Coin Methods
+void AMainCharacter::SubtractCoins(int CoinsToSubtract)
+{
+	Coins -= CoinsToSubtract;
+	DebugText(FString::Printf(TEXT("Coins Collected: %i"), Coins), FColor::Orange, 3.0f);
+}
+
+void AMainCharacter::AddCoins(int CoinsToAdd)
+{
+	Coins += CoinsToAdd;
+	DebugText(FString::Printf(TEXT("Coins Collected: %i"), Coins), FColor::Yellow, 3.0f);
+}
 void AMainCharacter::Debug()
 {
 	if (ShowDebugLines)
@@ -676,9 +708,8 @@ void AMainCharacter::DebugState()
 	}
 }
 
-void AMainCharacter::DebugText(FString Text)
+void AMainCharacter::DebugText(const FString Text, const FColor TextColor, float Duration)
 {
-	const FColor TextColor = FColor::Red;
-	float Duration = 3.0f;
 	GEngine->AddOnScreenDebugMessage(-1, Duration, TextColor, Text);
 }
+

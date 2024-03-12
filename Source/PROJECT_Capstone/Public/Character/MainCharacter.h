@@ -18,10 +18,11 @@ USTRUCT(BlueprintType)
 struct FMovementParameters
 {
 	GENERATED_BODY()
-
+	
 	// Walking
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Walking")
 	float WalkSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Walking")
 	float MaxSpeed;
 
 	// Running
@@ -204,20 +205,35 @@ private:
 	FVector CurrentPosition;
 	
 	void DebugState(); //Prints the current MOVEMENT state of the character.
-	void DebugText(FString Text);
+	void DebugText(const FString Text, const FColor TextColor, const float Duration);
 	
 public:
+	//Health
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="General Player Properties")
+	int MaxHealth = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="General Player Properties")
+	int CurrentHealth = 3;
+	UFUNCTION(BlueprintCallable, Category="Health")
+	void SubtractHealth(int HealthToSubtract);
+	UFUNCTION(BlueprintCallable, Category="Health")
+	void AddHealth(int HealthToAdd);
+	//Coins Collected
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="General Player Properties")
+	int Coins = 0;
+	UFUNCTION(BlueprintCallable, Category="Coins")
+	void SubtractCoins(int CoinsToSubtract);
+	UFUNCTION(BlueprintCallable, Category="Coins")
+	void AddCoins(int CoinsToAdd);
 	//*************************************************************************//
 	//** IMPORTANT NOTE:Movement Values == MOVE THESE TO FMovementParameters **//
 	//*************************************************************************//
-	//Default Gravity Scale
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Movement Values")
 	float DefaultGravity = 2.5f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Movement Values")
-	float DefaultYRotationRate = 540.0f;
+	FRotator DefaultYRotationRate = FRotator(0.0f,540.0f,0.0f);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Movement Values")
 	float DefaultAirControl = 5.0f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement Values")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Default Movement Values")
 	float DefaultJumpZVelocity = 750.0f;
 	//Jump
 	bool CanJump = true;
@@ -238,12 +254,11 @@ public:
 	float DiveLength = 0.25f ;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
 	float DiveAirControl = 0.1f ;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Diving")
+	FRotator DiveRotationRate = FRotator(0.0f,0.0f,0.0f);
 	//Wall Sliding + Wall Jumps
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	bool bCanWallSlide = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	bool CanWallJump = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	bool WallSlideStart = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	bool IsWallSliding = false;
@@ -253,9 +268,13 @@ public:
 	float WallSlideDeceleration = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
 	float WallJumpSpeed = 750.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
+	FRotator WallJumpRotationRate = FRotator(0.0f,0.0f,0.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wall Slide & Wall Jumps")
+	float WallJumpAirControl = 0.0f;
 	
 	
-
+	
 	//Movement Methods
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue = 1.0f, bool bForce = false) override;
 
