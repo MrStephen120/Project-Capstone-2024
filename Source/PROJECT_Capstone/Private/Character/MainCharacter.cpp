@@ -116,6 +116,10 @@ void AMainCharacter::SetUpCamera()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 }
 
+void AMainCharacter::UpdateCamera()
+{
+}
+
 // Called to bind functionality to input
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {

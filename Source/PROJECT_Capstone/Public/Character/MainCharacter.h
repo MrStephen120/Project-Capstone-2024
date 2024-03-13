@@ -72,6 +72,8 @@ private:
 	void SetUpCharacterMovementSettings();
 	//Set up Camera Settings
 	void SetUpCamera();
+	//Update Camera
+	void UpdateCamera();
 	//SetUp Camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
