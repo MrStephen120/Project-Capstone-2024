@@ -45,9 +45,12 @@ void AMainCharacter::BeginPlay()
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	//Update Camera
+	UpdateCamera(DeltaTime);
 	
 	UpdateState();
-	//DebugState();
+	//Only works when Debug is set to true inside Character BP
+	DebugState();
 	Debug();
 	
 	//Handle Timeline ticks
@@ -116,8 +119,9 @@ void AMainCharacter::SetUpCamera()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 }
 
-void AMainCharacter::UpdateCamera()
+void AMainCharacter::UpdateCamera(float DeltaTime)
 {
+	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraDistance, DeltaTime, 3.0f );
 }
 
 // Called to bind functionality to input

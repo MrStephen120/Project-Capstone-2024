@@ -124,9 +124,11 @@ void AMainCharacterController::HandleLookAction(const FInputActionValue& Value)
 	// Input is a Vector2D
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	// Add yaw and pitch input to controller
+	// Add yaw and pitch input
 	AddYawInput(LookAxisVector.X);
 	AddPitchInput(LookAxisVector.Y);
+	
+	PlayerCharacter->SetCameraDistance(FMath::Clamp(((-LookAxisVector.Y * -30.0f) + PlayerCharacter->CameraDistance), PlayerCharacter->MinCameraDistance, PlayerCharacter->MaxCameraDistance));
 }
 
 

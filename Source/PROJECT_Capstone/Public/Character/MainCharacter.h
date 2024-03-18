@@ -14,34 +14,6 @@
 DECLARE_LOG_CATEGORY_EXTERN(MainCharacter, Log, All);
 class UCurveFloat;
 
-USTRUCT(BlueprintType)
-struct FMovementParameters
-{
-	GENERATED_BODY()
-	
-	// Walking
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Walking")
-	float WalkSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Walking")
-	float MaxSpeed;
-
-	// Running
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Running")
-	float RunSpeed;
-
-	// Jumping
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Jumping")
-	float JumpHeight;
-
-	// Wall Sliding
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Diving")
-	float DiveSpeed;
-	
-	// Wall Sliding
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Wall Sliding")
-	float WallSlideSpeed;
-};
-
 UENUM()
 enum class EMovementState
 {
@@ -66,20 +38,33 @@ private:
 	AMainCharacter(const FObjectInitializer& object);
 	//Getters for Camera Components
 private:
+	//**CAMERA STUFF**//
 	class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	//Set up CharacterMovement Settings
 	void SetUpCharacterMovementSettings();
 	//Set up Camera Settings
 	void SetUpCamera();
-	//Update Camera
-	void UpdateCamera();
+	//Update Camera and Camera Zoom
+	void UpdateCamera(float DeltaTime);
+public:
+	//Default Camera Distance(What the player Spawns with)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	float CameraDistance = 400.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	float MinCameraDistance = 300.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	float MaxCameraDistance = 600.0f;
+	
+	UFUNCTION(BlueprintCallable, Category = Camera)
+	void SetCameraDistance(float distanceY) { CameraDistance = distanceY; }
+private:
 	//SetUp Camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
-	
+	//**END OF CAMERA STUFF**//
 public:
 	//Particles
 	//Dive Trail
