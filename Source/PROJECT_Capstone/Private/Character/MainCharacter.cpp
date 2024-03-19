@@ -393,7 +393,7 @@ void AMainCharacter::HandleWallSlideState(FRotator outHitNormal)
 void AMainCharacter::HandleWallJumpState()
 {
 	CanWallJump = false;
-	CanJump = false;
+	JumpCount++;
 	CanDive = true;
 	//Do WallJump
 	//Set CharacterMovement Values
@@ -596,7 +596,7 @@ void AMainCharacter::Dive()
 	//Set Bools
 	isDiving = true;
 	CanDive = false;
-	CanJump = false;
+	JumpCount++;
 	
 	//Delay Timer
 	FTimerHandle DiveTimer;

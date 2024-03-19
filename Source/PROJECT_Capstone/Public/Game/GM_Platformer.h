@@ -6,7 +6,6 @@
 #include <GameFramework/GameModeBase.h>
 #include "Character/MainCharacter.h"
 #include "Game/MainCharacterController.h"
-
 #include "GM_Platformer.generated.h"
 
 /**
@@ -41,6 +40,12 @@ protected:
     //Timer handle for delay
     FTimerHandle DelayTimerHandle;
 
+	//User Interface References 
+	void InitializeUserInterface();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
+	TSubclassOf<UUserWidget> CoinsIndicatorClass;
+	
 	//The spawn transform
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawning")
 	FTransform SpawnTransform;
