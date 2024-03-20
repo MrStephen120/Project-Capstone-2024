@@ -48,6 +48,12 @@ private:
 	//Update Camera and Camera Zoom
 	void UpdateCamera(float DeltaTime);
 public:
+	//Reset Camera
+	//DiveSqueeze Timeline;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	FRotator DefaultCameraRotation = FRotator(0.0f,-10.0f,0.0f);
+	
+	void ResetCamera();
 	//Default Camera Distance(What the player Spawns with)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	float CameraDistance = 400.0f;

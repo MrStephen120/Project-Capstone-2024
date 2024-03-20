@@ -37,6 +37,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera Action")
 	TObjectPtr<UInputAction> LookAction = nullptr;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reset Camera Action")
+	TObjectPtr<UInputAction> ResetCameraAction = nullptr;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dive Action")
 	TObjectPtr<UInputAction> DiveAction = nullptr;
 
@@ -64,6 +67,9 @@ protected:
 	
 	//void Look();
 	void HandleLookAction(const FInputActionValue& Value);
+
+	//void ResetCamera();
+	void HandleResetCameraAction();
 
 	//Use FInputActionInstance for more details on input being handled.
 

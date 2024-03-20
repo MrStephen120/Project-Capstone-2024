@@ -104,6 +104,7 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 	JumpMaxCount = 2.0f;
 }
 
+//** CAMERA METHODS**//
 void AMainCharacter::SetUpCamera()
 {
 	// Create a camera boom (pulls in towards the player if there is a collision)
@@ -123,6 +124,12 @@ void AMainCharacter::UpdateCamera(float DeltaTime)
 {
 	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraDistance, DeltaTime, 3.0f );
 }
+
+void AMainCharacter::ResetCamera()
+{
+	GetController()->SetControlRotation(GetActorRotation());
+}
+//*END OF CAMERA METHODS*//
 
 // Called to bind functionality to input
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

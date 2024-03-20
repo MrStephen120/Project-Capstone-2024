@@ -56,6 +56,11 @@ void AMainCharacterController::OnPossess(APawn* aPawn)
 		EnhancedInput->BindAction(WallSlideAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleWallSlideAction);
 		EnhancedInput->BindAction(WallSlideAction, ETriggerEvent::Completed, this, &AMainCharacterController::HandleStopWallSlideAction);
 	}
+
+	if (ResetCameraAction)
+	{
+		EnhancedInput->BindAction(ResetCameraAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleResetCameraAction);
+	}
 }
 
 void AMainCharacterController::OnUnPossess()
@@ -129,6 +134,11 @@ void AMainCharacterController::HandleLookAction(const FInputActionValue& Value)
 	AddPitchInput(LookAxisVector.Y);
 	
 	PlayerCharacter->SetCameraDistance(FMath::Clamp(((-LookAxisVector.Y * -30.0f) + PlayerCharacter->CameraDistance), PlayerCharacter->MinCameraDistance, PlayerCharacter->MaxCameraDistance));
+}
+
+void AMainCharacterController::HandleResetCameraAction()
+{
+	PlayerCharacter->ResetCamera();
 }
 
 
