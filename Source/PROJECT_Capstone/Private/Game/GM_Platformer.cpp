@@ -5,6 +5,7 @@
 
 #include "AssetSelection.h"
 #include "PropertyAccess.h"
+#include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -22,6 +23,9 @@ void AGM_Platformer::Tick(float DeltaTime)
 void AGM_Platformer::BeginPlay()
 {
     Super::BeginPlay();
+    //Initialize User Interface
+    InitializeUserInterface();
+    
     //Get CHaracter
     PlayerCharacter = Cast<AMainCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
     checkf(PlayerCharacter, TEXT("GM_Platformer - Failed to cast to PlayerCharacter."))
@@ -31,6 +35,14 @@ void AGM_Platformer::BeginPlay()
     {
         //Bind to OnDestroyed Event
         PlayerCharacter->OnDestroyed.AddDynamic(this, &AGM_Platformer::OnCharacterDestroyed);
+    }
+}
+void AGM_Platformer::InitializeUserInterface()
+{
+   UUserWidget* CoinsUI = CreateWidget<UUserWidget>(GetWorld(), CoinsIndicatorClass);
+    if (CoinsUI != nullptr)
+    {
+        CoinsUI->AddToViewport();
     }
 }
 
@@ -69,3 +81,4 @@ void AGM_Platformer::RespawnCharacter()
         }
     }
 }
+
