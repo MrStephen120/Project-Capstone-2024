@@ -17,6 +17,7 @@ public class PROJECT_Capstone : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"Niagara",
+			"AIModule",
 			"UMG"
 		});
 
