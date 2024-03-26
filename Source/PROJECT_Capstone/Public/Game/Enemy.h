@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Enemy.generated.h"
 
@@ -17,6 +18,7 @@ class PROJECT_CAPSTONE_API AEnemy : public ACharacter
 
 	USkeletalMeshComponent* Mesh;
 	UCapsuleComponent* MeshCollision;
+	UBoxComponent* StompCollision;
 	USphereComponent* PlayerDetection;
 	AAIController* EnemyAIController;
 	
@@ -43,13 +45,41 @@ protected:
 	
 	//Enemy Behaviors
 	UFUNCTION()
-	void HandleChase();
+	void HandleChaseStart();
+
+	UFUNCTION()
+	void HandleChaseStop();
+
+	//Chasing State Values
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chase State")
 	UBehaviorTree* EnemyChaseBehaviorTree = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chase State")
 	bool isChasing = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chase State")
-	float ChaseSpeed = 500.0f;
+	float ChaseSpeed = 400.0f;
+
+	//Wandering State Values
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wander State")
+	UBehaviorTree* EnemyWanderBehaviorTree = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wander State")
+	bool isWandering = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wander State")
+	float WanderSpeed = 300.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wander State")
+	FVector StartLocation = FVector(0.0f,0.0f,0.0f);
+
+	//Stomp
+	bool Dead = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stomp")
+	float StompLaunchForce = 750.0f;
+
+	UFUNCTION()
+	void OnStompBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	void SquishEnemy();
+	void DestroyEnemy();
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
