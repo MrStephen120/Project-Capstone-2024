@@ -484,7 +484,7 @@ void AMainCharacter::HandleJumpSmokeRing()
 		FRotator(0.0f),
 		EAttachLocation::SnapToTarget,
 		true);
-	UE_LOG(LogTemp, Warning, TEXT("Spawning Smoke Ring."));
+	//UE_LOG(LogTemp, Warning, TEXT("Spawning Smoke Ring."));
 
 	if (SmokeRingParticleComponent->IsComplete()) {
 		SmokeRingParticleComponent->DestroyComponent();
@@ -527,7 +527,7 @@ void AMainCharacter::HandleDiveParticles()
 		FRotator(0.0f),
 		EAttachLocation::SnapToTarget,
 		true);
-		UE_LOG(LogTemp, Warning, TEXT("Spawning Dive Particles."));
+		//UE_LOG(LogTemp, Warning, TEXT("Spawning Dive Particles."));
 		DiveParticleComponent->SetNiagaraVariableFloat(TEXT("RateSpawn"), 0.0f);
 		CanDiveParticles = false;
 	}

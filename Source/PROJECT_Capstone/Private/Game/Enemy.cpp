@@ -26,8 +26,22 @@ void AEnemy::BeginPlay()
 	MeshCollision = FindComponentByClass<UCapsuleComponent>();
 	checkf(MeshCollision, TEXT("Enemy: CylinderComponent could not be initialized..."));
 
-	StompCollision = FindComponentByClass<UBoxComponent>();
-	checkf(MeshCollision, TEXT("Enemy: BoxComponent could not be initialized..."));
+	TArray<UBoxComponent*> BoxComponents;
+	GetComponents<UBoxComponent>(BoxComponents);
+
+	for (UBoxComponent* BoxComp : BoxComponents)
+	{
+		if (BoxComp->ComponentHasTag(FName("AttackHitBox")))
+		{
+			AttackCollision = BoxComp;
+			checkf(AttackCollision, TEXT("Enemy: Attack BoxComponent could not be initialized..."));
+		}
+		else if (BoxComp->ComponentHasTag(FName("StompHitBox")))
+		{
+			StompCollision = BoxComp;
+			checkf(StompCollision, TEXT("Enemy: Stomp BoxComponent could not be initialized..."));
+		}
+	}
 	
 	PlayerDetection = FindComponentByClass<USphereComponent>();
 	checkf(PlayerDetection, TEXT("Enemy: SphereComponent could not be initialized..."));
@@ -44,6 +58,9 @@ void AEnemy::BeginPlay()
 
 	//Stomp Events
 	StompCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnStompBegin);
+
+	//Attack Events
+	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::OnPlayerCollision);
 }
 
 void AEnemy::OnPlayerDetected(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -122,6 +139,37 @@ void AEnemy::DestroyEnemy()
 {
 	this->Destroy();
 }
+
+void AEnemy::OnPlayerCollision(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (AMainCharacter* Player = Cast<AMainCharacter>(OtherActor))
+	{
+		if (!Attacking && !Dead)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "Attacking Player.");
+			Attacking = true;
+			//Deal damage to the player
+			Player->SubtractHealth(Damage);
+			//Knock player back
+			FVector Direction = Player->GetActorLocation() - GetActorLocation();
+			Direction.Normalize();
+			FVector KnockBackDirection = FVector::DotProduct(Direction, GetActorForwardVector()) * GetActorForwardVector();
+			KnockBackDirection.Normalize();
+
+			Player->LaunchCharacter(KnockBackDirection * KnockBackStrength + FVector(0.0f,0.0f,KnockBackStrength/1.5f), true, true);
+			//Check if Player Has Enough Health.
+			if (Player->CurrentHealth == 0)
+			{
+				Player->Destroy();
+			}
+			//Attack Cooldown
+			FTimerHandle TimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AEnemy::ResetAttack, 1.0f, false);
+		};
+	}
+}
+
 
 // Called every frame
 void AEnemy::Tick(float DeltaTime)

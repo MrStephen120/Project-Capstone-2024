@@ -19,6 +19,7 @@ class PROJECT_CAPSTONE_API AEnemy : public ACharacter
 	USkeletalMeshComponent* Mesh;
 	UCapsuleComponent* MeshCollision;
 	UBoxComponent* StompCollision;
+	UBoxComponent* AttackCollision;
 	USphereComponent* PlayerDetection;
 	AAIController* EnemyAIController;
 	
@@ -80,6 +81,19 @@ protected:
 
 	void SquishEnemy();
 	void DestroyEnemy();
+
+	//Attack Player
+	bool Attacking = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	int Damage = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	float KnockBackStrength = 1000.0f;
+	UFUNCTION()
+	void OnPlayerCollision(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	void ResetAttack() { Attacking = false; };
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
