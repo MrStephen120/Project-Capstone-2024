@@ -36,6 +36,20 @@ public:
 	UFUNCTION()
 	void RespawnCharacter();
 	
+	//Coins Collected 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Coins")
+	int Coins = 0;
+	UFUNCTION(BlueprintCallable, Category="Coins")
+	void SubtractCoins(int CoinsToSubtract);
+	UFUNCTION(BlueprintCallable, Category="Coins")
+	void AddCoins(int CoinsToAdd);
+
+	//Trophies Collected
+	//Coins Collected 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Trophies")
+	int Trophies = 0;
+	UFUNCTION(BlueprintCallable, Category="Trophies")
+	void AddTrophy(int TrophyToAdd);
 protected:
     //Timer handle for delay
     FTimerHandle DelayTimerHandle;
