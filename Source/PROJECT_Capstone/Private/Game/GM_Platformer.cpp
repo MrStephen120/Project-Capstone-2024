@@ -3,8 +3,6 @@
 
 #include "Game/GM_Platformer.h"
 
-#include "AssetSelection.h"
-#include "PropertyAccess.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
