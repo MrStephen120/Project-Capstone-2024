@@ -210,7 +210,7 @@ public:
 	void SubtractHealth(int HealthToSubtract);
 	UFUNCTION(BlueprintCallable, Category="Health")
 	void AddHealth(int HealthToAdd);
-	//Coins Collected
+	//Coins Collected NOTE: MOVE THIS TO GAMEMODE
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="General Player Properties")
 	int Coins = 0;
 	UFUNCTION(BlueprintCallable, Category="Coins")

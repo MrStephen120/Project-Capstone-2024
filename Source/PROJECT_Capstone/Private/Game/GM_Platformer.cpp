@@ -82,3 +82,23 @@ void AGM_Platformer::RespawnCharacter()
     }
 }
 
+void AGM_Platformer::SubtractCoins(int CoinsToSubtract)
+{
+    Coins -= CoinsToSubtract;
+
+    GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Coins Collected: %i"), Coins));	
+}
+
+void AGM_Platformer::AddCoins(int CoinsToAdd)
+{
+    Coins += CoinsToAdd;
+    //Play Effects Here
+    GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Coins Collected: %i"), Coins));
+}
+
+void AGM_Platformer::AddTrophy(int TrophyToAdd)
+{
+    Trophies += TrophyToAdd;
+    GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, FString::Printf(TEXT("Trophies Collected: %i"), Coins));
+}
+
