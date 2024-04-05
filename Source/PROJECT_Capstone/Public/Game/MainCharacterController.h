@@ -46,6 +46,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WallSlide Action")
 	TObjectPtr<UInputAction> WallSlideAction = nullptr;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI Navigation")
+	TObjectPtr<UInputAction> UINavigateAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI Navigation")
+	TObjectPtr<UInputAction> UIConfirmAction = nullptr;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
 
