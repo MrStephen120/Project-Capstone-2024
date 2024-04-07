@@ -44,6 +44,18 @@ void AGM_Platformer::InitializeUserInterface()
     }
 }
 
+void AGM_Platformer::CheckIfGameWon()
+{
+    UUserWidget* WinScreenUI = CreateWidget<UUserWidget>(GetWorld(), WinScreenWidgetClass);
+    if (Trophies >= TrophiesToWin)
+    {
+        //Pop up the Win Screen
+        WinScreenUI->AddToViewport();
+        GetWorld()->GetFirstPlayerController()->SetPause(true);
+        GetWorld()->GetFirstPlayerController()->SetShowMouseCursor(true);
+    }
+}
+
 void AGM_Platformer::OnCharacterDestroyed(AActor* DestroyedActor)
 {
     UE_LOG(LogTemp, Warning, TEXT("PlayerCharacter was destroyed"));
@@ -97,6 +109,7 @@ void AGM_Platformer::AddCoins(int CoinsToAdd)
 void AGM_Platformer::AddTrophy(int TrophyToAdd)
 {
     Trophies += TrophyToAdd;
+    CheckIfGameWon();
     GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, FString::Printf(TEXT("Trophies Collected: %i"), Coins));
 }
 

@@ -45,7 +45,8 @@ public:
 	void AddCoins(int CoinsToAdd);
 
 	//Trophies Collected
-	//Coins Collected 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Trophies")
+	int TrophiesToWin = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Trophies")
 	int Trophies = 0;
 	UFUNCTION(BlueprintCallable, Category="Trophies")
@@ -59,6 +60,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
 	TSubclassOf<UUserWidget> CoinsIndicatorClass;
+		
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
+	TSubclassOf<UUserWidget> WinScreenWidgetClass = nullptr;
 	
 	//The spawn transform
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawning")
@@ -66,4 +70,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Reference")
 	TSubclassOf<AMainCharacter> PlayerCharacterClass = nullptr;
+
+	//Win Screen
+	UFUNCTION()
+	void CheckIfGameWon();
 };
