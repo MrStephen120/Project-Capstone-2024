@@ -2,6 +2,9 @@
 
 
 #include "Game/MainCharacterController.h"
+
+#include <Blueprint/UserWidget.h>
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -60,6 +63,12 @@ void AMainCharacterController::OnPossess(APawn* aPawn)
 	if (ResetCameraAction)
 	{
 		EnhancedInput->BindAction(ResetCameraAction, ETriggerEvent::Started, this, &AMainCharacterController::HandleResetCameraAction);
+	}
+
+	//Pause Game
+	if (UIPauseAction)
+	{
+		EnhancedInput->BindAction(UIPauseAction, ETriggerEvent::Started, this, &AMainCharacterController::HandlePauseGame);
 	}
 }
 
@@ -139,6 +148,18 @@ void AMainCharacterController::HandleLookAction(const FInputActionValue& Value)
 void AMainCharacterController::HandleResetCameraAction()
 {
 	PlayerCharacter->ResetCamera();
+}
+
+void AMainCharacterController::HandlePauseGame()
+{
+	if (!IsPaused())
+	{
+		Pause();
+		//Pop up the pause screen.
+		PauseWidgetInstance = CreateWidget<UUserWidget>(this, PauseWidgetClass);
+		PauseWidgetInstance->AddToViewport();
+		SetShowMouseCursor(true);
+	}
 }
 
 
