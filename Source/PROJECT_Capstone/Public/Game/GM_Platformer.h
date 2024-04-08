@@ -36,21 +36,9 @@ public:
 	UFUNCTION()
 	void RespawnCharacter();
 	
-	//Coins Collected 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Coins")
-	int Coins = 0;
-	UFUNCTION(BlueprintCallable, Category="Coins")
-	void SubtractCoins(int CoinsToSubtract);
-	UFUNCTION(BlueprintCallable, Category="Coins")
-	void AddCoins(int CoinsToAdd);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
+	TSubclassOf<UUserWidget> CoinsIndicatorClass;
 
-	//Trophies Collected
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Trophies")
-	int TrophiesToWin = 10;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Trophies")
-	int Trophies = 0;
-	UFUNCTION(BlueprintCallable, Category="Trophies")
-	void AddTrophy(int TrophyToAdd);
 protected:
     //Timer handle for delay
     FTimerHandle DelayTimerHandle;
@@ -58,20 +46,10 @@ protected:
 	//User Interface References 
 	void InitializeUserInterface();
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
-	TSubclassOf<UUserWidget> CoinsIndicatorClass;
-		
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
-	TSubclassOf<UUserWidget> WinScreenWidgetClass = nullptr;
-	
 	//The spawn transform
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawning")
 	FTransform SpawnTransform;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Reference")
 	TSubclassOf<AMainCharacter> PlayerCharacterClass = nullptr;
-
-	//Win Screen
-	UFUNCTION()
-	void CheckIfGameWon();
 };
