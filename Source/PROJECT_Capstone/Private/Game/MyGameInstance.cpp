@@ -26,6 +26,27 @@ void UMyGameInstance::AddTrophy(int TrophyToAdd)
 	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, FString::Printf(TEXT("Trophies Collected: %i"), Trophies));
 }
 
+void UMyGameInstance::CollectTrophy(const FString& TrophyID)
+{
+	if (!CollectedTrophiesIDs.Contains(TrophyID))
+	{
+		CollectedTrophiesIDs.Add(TrophyID);
+	}
+}
+
+bool UMyGameInstance::IsTrophyCollected(const FString& TrophyID) const
+{
+	return CollectedTrophiesIDs.Contains(TrophyID);
+}
+
+void UMyGameInstance::CompleteChallenge(const FString& GateID)
+{
+}
+
+void UMyGameInstance::IsChallengeCompleted(const FString& GateID)
+{
+}
+
 void UMyGameInstance::CheckIfWin()
 {
 	UUserWidget* WinScreen = CreateWidget<UUserWidget>(GetWorld(), WinScreenWidget);
