@@ -36,15 +36,29 @@ public:
 	UFUNCTION()
 	void RespawnCharacter();
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
-	TSubclassOf<UUserWidget> CoinsIndicatorClass;
+	//Coins Collected 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Coins")
+	int Coins = 0;
+	UFUNCTION(BlueprintCallable, Category="Coins")
+	void SubtractCoins(int CoinsToSubtract);
+	UFUNCTION(BlueprintCallable, Category="Coins")
+	void AddCoins(int CoinsToAdd);
 
+	//Trophies Collected
+	//Coins Collected 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Trophies")
+	int Trophies = 0;
+	UFUNCTION(BlueprintCallable, Category="Trophies")
+	void AddTrophy(int TrophyToAdd);
 protected:
     //Timer handle for delay
     FTimerHandle DelayTimerHandle;
 
 	//User Interface References 
 	void InitializeUserInterface();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
+	TSubclassOf<UUserWidget> CoinsIndicatorClass;
 	
 	//The spawn transform
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawning")
