@@ -37,15 +37,34 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera Action")
 	TObjectPtr<UInputAction> LookAction = nullptr;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reset Camera Action")
+	TObjectPtr<UInputAction> ResetCameraAction = nullptr;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dive Action")
 	TObjectPtr<UInputAction> DiveAction = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WallSlide Action")
 	TObjectPtr<UInputAction> WallSlideAction = nullptr;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI Navigation")
+	TObjectPtr<UInputAction> UINavigateAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI Navigation")
+	TObjectPtr<UInputAction> UIConfirmAction = nullptr;
+	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
 
+	//Pause Menu UI
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI Pause")
+	TSubclassOf<UUserWidget> PauseWidgetClass = nullptr;
+	UPROPERTY()
+	UUserWidget* PauseWidgetInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI Pause")
+	TObjectPtr<UInputAction> UIPauseAction = nullptr;
+	
 protected:
 	// Enhanced Input Action Handlers
 	//void Move();
@@ -65,6 +84,12 @@ protected:
 	//void Look();
 	void HandleLookAction(const FInputActionValue& Value);
 
+	//void ResetCamera();
+	void HandleResetCameraAction();
+
+	//Pause Game
+	void HandlePauseGame();
+	
 	//Use FInputActionInstance for more details on input being handled.
 
 	virtual void OnPossess(APawn* aPawn) override;

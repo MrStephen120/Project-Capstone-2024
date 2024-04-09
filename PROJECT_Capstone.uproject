@@ -30,5 +30,8 @@
 			"Name": "CustomStateMachine",
 			"Enabled": false
 		}
+	],
+	"TargetPlatforms": [
+		"Windows"
 	]
 }

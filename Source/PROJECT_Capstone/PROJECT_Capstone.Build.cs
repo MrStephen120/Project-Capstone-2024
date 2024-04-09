@@ -16,7 +16,9 @@ public class PROJECT_Capstone : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
-			"Niagara"
+			"Niagara",
+			"AIModule",
+			"UMG"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

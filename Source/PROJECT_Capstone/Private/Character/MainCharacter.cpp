@@ -45,9 +45,12 @@ void AMainCharacter::BeginPlay()
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	//Update Camera
+	UpdateCamera(DeltaTime);
 	
 	UpdateState();
-	//DebugState();
+	//Only works when Debug is set to true inside Character BP
+	DebugState();
 	Debug();
 	
 	//Handle Timeline ticks
@@ -101,6 +104,7 @@ void AMainCharacter::SetUpCharacterMovementSettings()
 	JumpMaxCount = 2.0f;
 }
 
+//** CAMERA METHODS**//
 void AMainCharacter::SetUpCamera()
 {
 	// Create a camera boom (pulls in towards the player if there is a collision)
@@ -115,6 +119,17 @@ void AMainCharacter::SetUpCamera()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 }
+
+void AMainCharacter::UpdateCamera(float DeltaTime)
+{
+	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, CameraDistance, DeltaTime, 3.0f );
+}
+
+void AMainCharacter::ResetCamera()
+{
+	GetController()->SetControlRotation(GetActorRotation());
+}
+//*END OF CAMERA METHODS*//
 
 // Called to bind functionality to input
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -385,7 +400,7 @@ void AMainCharacter::HandleWallSlideState(FRotator outHitNormal)
 void AMainCharacter::HandleWallJumpState()
 {
 	CanWallJump = false;
-	CanJump = false;
+	JumpCount++;
 	CanDive = true;
 	//Do WallJump
 	//Set CharacterMovement Values
@@ -469,7 +484,7 @@ void AMainCharacter::HandleJumpSmokeRing()
 		FRotator(0.0f),
 		EAttachLocation::SnapToTarget,
 		true);
-	UE_LOG(LogTemp, Warning, TEXT("Spawning Smoke Ring."));
+	//UE_LOG(LogTemp, Warning, TEXT("Spawning Smoke Ring."));
 
 	if (SmokeRingParticleComponent->IsComplete()) {
 		SmokeRingParticleComponent->DestroyComponent();
@@ -512,7 +527,7 @@ void AMainCharacter::HandleDiveParticles()
 		FRotator(0.0f),
 		EAttachLocation::SnapToTarget,
 		true);
-		UE_LOG(LogTemp, Warning, TEXT("Spawning Dive Particles."));
+		//UE_LOG(LogTemp, Warning, TEXT("Spawning Dive Particles."));
 		DiveParticleComponent->SetNiagaraVariableFloat(TEXT("RateSpawn"), 0.0f);
 		CanDiveParticles = false;
 	}
@@ -588,7 +603,7 @@ void AMainCharacter::Dive()
 	//Set Bools
 	isDiving = true;
 	CanDive = false;
-	CanJump = false;
+	JumpCount++;
 	
 	//Delay Timer
 	FTimerHandle DiveTimer;
