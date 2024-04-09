@@ -41,10 +41,15 @@ bool UMyGameInstance::IsTrophyCollected(const FString& TrophyID) const
 
 void UMyGameInstance::CompleteChallenge(const FString& GateID)
 {
+	if (!ChallengeGatesCompleted.Contains(GateID))
+	{
+		ChallengeGatesCompleted.Add(GateID);
+	}
 }
 
-void UMyGameInstance::IsChallengeCompleted(const FString& GateID)
+bool UMyGameInstance::IsChallengeCompleted(const FString& GateID)
 {
+	return ChallengeGatesCompleted.Contains(GateID);
 }
 
 void UMyGameInstance::CheckIfWin()

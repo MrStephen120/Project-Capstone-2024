@@ -46,18 +46,24 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Challenge Gates")
 	TArray<FString> ChallengeGatesCompleted;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Challenge Gates")
+	FString CurrentChallengeGate;
+	
 	// Function to see if trophy inside challenge gate has been collected.
 	UFUNCTION(BlueprintCallable, Category = "Challenge Gates")
 	void CompleteChallenge(const FString& GateID);
 
 	// Function to check if the challenge gate has been completed.
 	UFUNCTION(BlueprintCallable, Category = "Challenge Gates")
-	void IsChallengeCompleted(const FString& GateID);
-
+	bool IsChallengeCompleted(const FString& GateID);
 	
 	//Win Screen
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
 	TSubclassOf<UUserWidget> WinScreenWidget = nullptr;
+
+	//Store Spawn Transform
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Spawn Transform")
+	FTransform SpawnTransformInstance;
 	
 	UFUNCTION(BlueprintCallable)
 	void CheckIfWin();
