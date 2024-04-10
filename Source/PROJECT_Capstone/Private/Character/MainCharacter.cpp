@@ -14,7 +14,9 @@
 
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
+#include "Components/AudioComponent.h"
 #include "EntitySystem/MovieSceneEntitySystemRunner.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(MainCharacter);
 // Sets default values
@@ -22,7 +24,14 @@ AMainCharacter::AMainCharacter(const FObjectInitializer& object)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
+
+	//Set Up AudioComponent
+	// Initialize the audio component and attach it
+	WalkingAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("WalkingAudio"));
+	WalkingAudioComponent->SetupAttachment(RootComponent);
+	WalkingAudioComponent->bAutoActivate = false;  // Prevent the component from playing the sound immediately
+
+	//Other Set up
 	SetUpCharacterMovementSettings();
 	SetUpCamera();
 }
@@ -34,6 +43,7 @@ void AMainCharacter::BeginPlay()
 	
 	// Initialize the timelines
 	InitializeSquashStretchTimelines();
+	WalkingAudioComponent->SetSound(WalkingSound);
 	
 	//Initialize Particles
 	HandleWalkParticles();
@@ -79,7 +89,9 @@ void AMainCharacter::Landed(const FHitResult& Hit)
 
 	//VFX & SFX
 	LandSquishTimeline.PlayFromStart();
-
+	//Play Sound
+	UGameplayStatics::PlaySoundAtLocation(this, LandingSound, GetActorLocation());
+	
 	//Reset/DeActivate Particles
 	HandleWalkParticles();
 	HandleJumpSmokeRing();
@@ -263,11 +275,21 @@ void AMainCharacter::HandleGrounded()
 void AMainCharacter::HandleIdleState()
 {
 	DeActivateWalkParticles();
+	//Stop Sound
+	if (WalkingAudioComponent->IsPlaying())
+	{
+		WalkingAudioComponent->Stop();  // Stop playing the walking sound if the character is not moving
+	}
 }
 
 void AMainCharacter::HandleRunningState()
 {
 	HandleWalkParticles();
+	//Play Sound
+	if (!WalkingAudioComponent->IsPlaying())
+	{
+		WalkingAudioComponent->Play();
+	}
 }
 
 void AMainCharacter::HandleJumpRequest()
@@ -298,7 +320,8 @@ void AMainCharacter::HandleJumpState()
 	//Jump
 	Jump();
 	++JumpCount;
-
+	//PlaysSound
+	UGameplayStatics::PlaySoundAtLocation(this, JumpingSound, GetActorLocation());
 	//Play Timeline
 	JumpSqueezeTimeline.PlayFromStart();
 	
@@ -329,6 +352,12 @@ void AMainCharacter::HandleInAirState()
 	}
 	
 	DeActivateWalkParticles();
+
+	//Stop Walking Sound
+	if (WalkingAudioComponent->IsPlaying())
+	{
+		WalkingAudioComponent->Stop();  // Stop playing the walking sound if the character is not moving
+	}
 }
 
 void AMainCharacter::HandleAirJumpState()
@@ -339,6 +368,9 @@ void AMainCharacter::HandleAirJumpState()
 	
 	//Handle Particles
 	HandleJumpSmokeRing();
+	//Play Sound
+	UGameplayStatics::PlaySoundAtLocation(this, JumpingSound, GetActorLocation());
+	
 	//Play Timeline
 	JumpSqueezeTimeline.PlayFromStart();
 }
@@ -357,6 +389,9 @@ void AMainCharacter::HandleDivingState()
 		
 		//VFX Here
 		ActivateDiveParticles();
+		//Play Sound
+		UGameplayStatics::PlaySoundAtLocation(this, DashSound, GetActorLocation());
+		
 		//Play Timeline
 		DiveSqueezeTimeline.PlayFromStart();
 	}
@@ -382,7 +417,10 @@ void AMainCharacter::HandleWallSlideState(FRotator outHitNormal)
 				
 				//Immediately Stop Character
 				GetCharacterMovement()->Velocity = FVector(GetVelocity().X, GetVelocity().Y, 0.0f);
+				//Squish Effect
 				LandSquishTimeline.PlayFromStart();
+				//Play Sound
+				UGameplayStatics::PlaySoundAtLocation(this, LandingSound, GetActorLocation());
 			}
 			
 			GetCharacterMovement()->GravityScale = WallSlideGravityScale;
@@ -414,6 +452,9 @@ void AMainCharacter::HandleWallJumpState()
 
 	//Stretch
 	JumpSqueezeTimeline.PlayFromStart();
+	
+	//Play Sound
+	UGameplayStatics::PlaySoundAtLocation(this, JumpingSound, GetActorLocation());
 }
 
 bool AMainCharacter::IsCharacterIdle()

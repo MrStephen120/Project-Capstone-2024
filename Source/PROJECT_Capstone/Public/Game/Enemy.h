@@ -94,6 +94,12 @@ protected:
 		bool bFromSweep, const FHitResult& SweepResult);
 
 	void ResetAttack() { Attacking = false; };
+
+	//Audio
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* AttackSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* SquishAudio;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

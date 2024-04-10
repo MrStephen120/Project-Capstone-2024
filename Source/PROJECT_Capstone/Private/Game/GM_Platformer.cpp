@@ -2,7 +2,7 @@
 
 
 #include "Game/GM_Platformer.h"
-
+#include "Game/MyGameInstance.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
@@ -24,7 +24,7 @@ void AGM_Platformer::BeginPlay()
     //Initialize User Interface
     InitializeUserInterface();
     
-    //Get CHaracter
+    //Get Character
     PlayerCharacter = Cast<AMainCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
     checkf(PlayerCharacter, TEXT("GM_Platformer - Failed to cast to PlayerCharacter."))
     
@@ -47,6 +47,8 @@ void AGM_Platformer::InitializeUserInterface()
 void AGM_Platformer::OnCharacterDestroyed(AActor* DestroyedActor)
 {
     UE_LOG(LogTemp, Warning, TEXT("PlayerCharacter was destroyed"));
+    //Play Sound
+    UGameplayStatics::PlaySound2D(this, DeathAudio);
     // Set the timer to call the function after a delay
     GetWorld()->GetTimerManager().SetTimer(DelayTimerHandle, this, &AGM_Platformer::RespawnCharacter, 1.0f, false);
 }
@@ -58,6 +60,8 @@ void AGM_Platformer::RespawnCharacter()
     {
         //Spawn the new Character
         AMainCharacter* NewCharacter = GetWorld()->SpawnActor<AMainCharacter>(PlayerCharacterClass, SpawnTransform);
+        //Play Sound
+        UGameplayStatics::PlaySound2D(this, RespawningAudio);
 
         // Possess the newly spawned character with the player's controller
         APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);

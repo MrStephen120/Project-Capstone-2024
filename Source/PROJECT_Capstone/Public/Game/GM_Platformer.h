@@ -39,6 +39,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User Interface")
 	TSubclassOf<UUserWidget> CoinsIndicatorClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* RespawningAudio;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* DeathAudio;
+	
 protected:
     //Timer handle for delay
     FTimerHandle DelayTimerHandle;

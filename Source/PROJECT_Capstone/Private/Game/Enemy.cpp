@@ -7,6 +7,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Character/MainCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -128,6 +129,11 @@ void AEnemy::OnStompBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActo
 void AEnemy::SquishEnemy()
 {
 	Dead = true;
+	//Play Sound
+	UGameplayStatics::PlaySoundAtLocation(this, SquishAudio, GetActorLocation());
+
+	//Stop Enemy Logics
+	StompCollision->SetActive(false);
 	GetCharacterMovement()->StopMovementImmediately();
 	EnemyAIController->BrainComponent->StopLogic("Stomped.");
 	GetMesh()->SetWorldScale3D(FVector(1.5f, 1.5f, 0.25f));
@@ -147,6 +153,9 @@ void AEnemy::OnPlayerCollision(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	{
 		if (!Attacking && !Dead)
 		{
+			//Play Sound
+			UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
+			
 			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "Attacking Player.");
 			Attacking = true;
 			//Deal damage to the player

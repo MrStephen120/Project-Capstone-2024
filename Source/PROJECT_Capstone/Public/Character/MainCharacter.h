@@ -108,7 +108,22 @@ private:
 	void ActivateDiveParticles();
 	void DeActivateDiveParticles();
 	void HandleDiveParticles();
+//** Audio Section **//
+protected:
+	//Create Audio Component inside initialization
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Audio")
+	UAudioComponent* WalkingAudioComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* WalkingSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* JumpingSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* DashSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* LandingSound;
 
+	bool IsWalkingSoundPlaying = false;
+	
 //* Squash & Stretch Section *//
 protected:
 	//Squash & Stretch
