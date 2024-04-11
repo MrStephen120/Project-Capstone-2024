@@ -14,14 +14,19 @@ class PROJECT_CAPSTONE_API UMyGameInstance : public UGameInstance
 	GENERATED_BODY()
 
 public:
+	// Initializes the instance
+	virtual void Init() override;
+
+protected:
 	//Coins Collected 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Coins")
 	int Coins = 0;
+public:
 	UFUNCTION(BlueprintCallable, Category="Coins")
 	void SubtractCoins(int CoinsToSubtract);
 	UFUNCTION(BlueprintCallable, Category="Coins")
 	void AddCoins(int CoinsToAdd);
-
+protected:
 	//Trophies Collected
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Trophies")
 	int TrophiesToWin = 10;
@@ -67,4 +72,32 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	void CheckIfWin();
+	
+	// Timer handle for the repeating timer
+	FTimerHandle TimerHandle;
+	bool isTimerRunning = false;
+	
+	// Total elapsed time in seconds
+	int32 TotalSecondsElapsed = 0;
+	
+	void UpdateTimer() { TotalSecondsElapsed++; };
+
+	UFUNCTION(BlueprintCallable)
+	void StartTimer();
+
+	UFUNCTION(BlueprintCallable)
+	void PauseTimer();
+	
+	UFUNCTION(BlueprintCallable)
+	void StopTimer();
+
+	UFUNCTION(BlueprintCallable)
+	void ResetTimer();
+	
+	UFUNCTION(BlueprintCallable)
+	FString GetFormattedTime();
+
+	//bool for if the player has started the game
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	bool GameStarted = false;
 };

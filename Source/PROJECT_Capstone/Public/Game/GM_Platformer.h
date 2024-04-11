@@ -55,6 +55,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawning")
 	FTransform SpawnTransform;
 
+	//DyingParticles
+	UPROPERTY(EditAnywhere, Category = "Particles")
+	UNiagaraSystem* DeadPoof;
+	UNiagaraComponent* DeadPoofComponent;
+	void HandleDeadPoof();
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Reference")
 	TSubclassOf<AMainCharacter> PlayerCharacterClass = nullptr;
 };

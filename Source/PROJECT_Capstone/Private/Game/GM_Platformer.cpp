@@ -44,11 +44,27 @@ void AGM_Platformer::InitializeUserInterface()
     }
 }
 
+void AGM_Platformer::HandleDeadPoof()
+{
+    DeadPoofComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation
+    (GetWorld(),
+        DeadPoof,
+        PlayerCharacter->GetActorLocation());
+    //UE_LOG(LogTemp, Warning, TEXT("Spawning Smoke Ring."));
+
+    if (DeadPoofComponent->IsComplete()) {
+        DeadPoofComponent->DestroyComponent();
+    }
+}
+
 void AGM_Platformer::OnCharacterDestroyed(AActor* DestroyedActor)
 {
     UE_LOG(LogTemp, Warning, TEXT("PlayerCharacter was destroyed"));
+    //Play particles
+    HandleDeadPoof();
     //Play Sound
     UGameplayStatics::PlaySound2D(this, DeathAudio);
+    
     // Set the timer to call the function after a delay
     GetWorld()->GetTimerManager().SetTimer(DelayTimerHandle, this, &AGM_Platformer::RespawnCharacter, 1.0f, false);
 }
@@ -60,6 +76,9 @@ void AGM_Platformer::RespawnCharacter()
     {
         //Spawn the new Character
         AMainCharacter* NewCharacter = GetWorld()->SpawnActor<AMainCharacter>(PlayerCharacterClass, SpawnTransform);
+        //Subtract Coins
+        UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(GetWorld()->GetGameInstance());
+        MyGameInstance->SubtractCoins(10);
         //Play Sound
         UGameplayStatics::PlaySound2D(this, RespawningAudio);
 
