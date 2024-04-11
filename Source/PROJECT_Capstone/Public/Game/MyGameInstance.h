@@ -18,6 +18,9 @@ public:
 	virtual void Init() override;
 
 protected:
+	//Coins Required to Enter Gates
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Coins")
+	int32 CoinsRequired = 125;
 	//Coins Collected 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Coins")
 	int Coins = 0;
